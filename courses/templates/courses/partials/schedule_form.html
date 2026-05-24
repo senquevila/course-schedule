@@ -1,0 +1,60 @@
+<div class="modal-header">
+    <h2 class="modal-title">{% if is_create %}Add Schedule{% else %}Edit Schedule{% endif %}</h2>
+    <button class="modal-close" onclick="closeModal()">×</button>
+</div>
+
+<form method="POST"
+      hx-post="{% if is_create %}{% url 'courses:schedule-create' course.id %}{% else %}{% url 'courses:schedule-edit' course.id schedule.id %}{% endif %}"
+      hx-target="{% if is_create %}#schedules-table{% else %}#schedule-{{ schedule.id }}{% endif %}"
+      hx-swap="{% if is_create %}beforeend{% else %}outerHTML{% endif %}"
+      hx-on::after-request="if(event.detail.xhr.status === 200 || event.detail.xhr.status === 201) { closeModal(); }">
+    {% csrf_token %}
+
+    <div class="form-group">
+        <label>{{ form.days.label }}</label>
+        <div style="background-color: var(--gray-50); padding: 1rem; border-radius: var(--border-radius);">
+            {{ form.days }}
+        </div>
+        {% if form.days.errors %}
+        <div class="form-error">{{ form.days.errors.0 }}</div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.start_time.id_for_label }}">{{ form.start_time.label }}</label>
+        {{ form.start_time }}
+        {% if form.start_time.errors %}
+        <div class="form-error">{{ form.start_time.errors.0 }}</div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.end_time.id_for_label }}">{{ form.end_time.label }}</label>
+        {{ form.end_time }}
+        {% if form.end_time.errors %}
+        <div class="form-error">{{ form.end_time.errors.0 }}</div>
+        {% endif %}
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-error">
+        {{ form.non_field_errors.0 }}
+    </div>
+    {% endif %}
+
+    <p class="text-muted" style="font-size: 0.875rem; margin-top: 1rem;">
+        {% if is_create %}
+        Select one or more days to create multiple schedules at once with the same time.
+        {% else %}
+        Note: When editing, you can only select one day.
+        {% endif %}
+    </p>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="htmx-indicator">...</span>
+            {% if is_create %}Create Schedule{% else %}Save Changes{% endif %}
+        </button>
+    </div>
+</form>

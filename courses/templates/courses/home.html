@@ -1,0 +1,513 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Course Calendar{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero">
+    <h1>Course Calendar</h1>
+    <p>Manage your teaching schedules, topics, and materials effortlessly</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ courses }}</div>
+        <div class="stat-label">Courses</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ topics }}</div>
+        <div class="stat-label">Topics</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ materials }}</div>
+        <div class="stat-label">Materials</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ schedules }}</div>
+        <div class="stat-label">Schedules</div>
+    </div>
+</div>
+
+<!-- Main Menu -->
+<div class="menu-section">
+    <h2>Menu</h2>
+    <div class="menu-grid">
+        <!-- Courses -->
+        <a href="{% url 'courses:course-list' %}" class="menu-card menu-card-primary">
+            <div class="menu-icon">📚</div>
+            <h3>Manage Courses</h3>
+            <p>View, create, and edit your courses</p>
+            <span class="menu-action">Go →</span>
+        </a>
+
+        <!-- Admin -->
+        <a href="/admin/" class="menu-card menu-card-secondary">
+            <div class="menu-icon">⚙️</div>
+            <h3>Admin Panel</h3>
+            <p>Django admin interface for all models</p>
+            <span class="menu-action">Go →</span>
+        </a>
+
+        <!-- Topics -->
+        <div class="menu-card menu-card-info">
+            <div class="menu-icon">📖</div>
+            <h3>Topics</h3>
+            <p>Manage course topics and materials</p>
+            <small class="text-muted">Select a course first</small>
+        </div>
+
+        <!-- Schedule -->
+        <div class="menu-card menu-card-warning">
+            <div class="menu-icon">📅</div>
+            <h3>Schedule</h3>
+            <p>Set up recurring course schedules</p>
+            <small class="text-muted">Select a course first</small>
+        </div>
+
+        <!-- Documentation -->
+        <a href="https://github.com/senquevila/course-programming" target="_blank" class="menu-card menu-card-secondary">
+            <div class="menu-icon">📝</div>
+            <h3>Documentation</h3>
+            <p>View project documentation and guides</p>
+            <span class="menu-action">Go →</span>
+        </a>
+
+        <!-- Quick Actions -->
+        <div class="menu-card menu-card-success">
+            <div class="menu-icon">⚡</div>
+            <h3>Quick Start</h3>
+            <p>Get started in 3 simple steps</p>
+            <button class="btn btn-sm btn-primary" onclick="scrollToGuide()">Learn</button>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Courses -->
+{% if recent_courses %}
+<div class="recent-section mt-5">
+    <h2>Recent Courses</h2>
+    <div class="courses-grid">
+        {% for course in recent_courses %}
+        <div class="course-card">
+            <div class="course-header">
+                <h4>{{ course.name }}</h4>
+                <span class="badge">{{ course.assignature.code }}</span>
+            </div>
+            <div class="course-body">
+                <p><strong>Instructor:</strong> {{ course.instructor_name|default:"Not assigned" }}</p>
+                <p><strong>Location:</strong> {{ course.location|default:"Not assigned" }}</p>
+                <p><strong>Period:</strong> {{ course.period.name }}</p>
+            </div>
+            <div class="course-footer">
+                <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-sm btn-primary">Topics</a>
+                <a href="{% url 'courses:schedule-list' course.id %}" class="btn btn-sm btn-secondary">Schedule</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info mt-5">
+    <p>No courses yet. <a href="{% url 'courses:course-list' %}" class="link">Create your first course →</a></p>
+</div>
+{% endif %}
+
+<!-- Quick Start Guide -->
+<div class="guide-section mt-5" id="guide">
+    <h2>Quick Start Guide</h2>
+    <div class="guide-steps">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h4>Create a Period</h4>
+            <p>Go to <a href="/admin/" class="link">Admin Panel</a> and create a teaching period (e.g., Spring 2026)</p>
+        </div>
+
+        <div class="step">
+            <div class="step-number">2</div>
+            <h4>Create Assignature</h4>
+            <p>Define course subjects with their weekly hours (e.g., CS101 - Data Structures, 3 hours/week)</p>
+        </div>
+
+        <div class="step">
+            <div class="step-number">3</div>
+            <h4>Create Course</h4>
+            <p>Link an assignature to a period with instructor name and location details</p>
+        </div>
+
+        <div class="step">
+            <div class="step-number">4</div>
+            <h4>Set Up Schedule</h4>
+            <p>Define the recurring weekly pattern (days and times) for your course</p>
+        </div>
+
+        <div class="step">
+            <div class="step-number">5</div>
+            <h4>Add Topics</h4>
+            <p>Create course topics and organize them in sequence</p>
+        </div>
+
+        <div class="step">
+            <div class="step-number">6</div>
+            <h4>Attach Materials</h4>
+            <p>Link PDFs, URLs, images, videos, and documents to each topic</p>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="features-section mt-5">
+    <h2>Key Features</h2>
+    <div class="features-grid">
+        <div class="feature">
+            <span class="feature-icon">⚡</span>
+            <h4>HTMX-Powered</h4>
+            <p>Fast, interactive forms without page reloads</p>
+        </div>
+
+        <div class="feature">
+            <span class="feature-icon">📱</span>
+            <h4>Responsive Design</h4>
+            <p>Works perfectly on mobile, tablet, and desktop</p>
+        </div>
+
+        <div class="feature">
+            <span class="feature-icon">🔒</span>
+            <h4>Secure</h4>
+            <p>CSRF protection and secure form handling</p>
+        </div>
+
+        <div class="feature">
+            <span class="feature-icon">✨</span>
+            <h4>User-Friendly</h4>
+            <p>Intuitive interface with helpful messages</p>
+        </div>
+
+        <div class="feature">
+            <span class="feature-icon">📊</span>
+            <h4>Data Management</h4>
+            <p>Organize courses, topics, materials, and schedules</p>
+        </div>
+
+        <div class="feature">
+            <span class="feature-icon">🎯</span>
+            <h4>Modal Dialogs</h4>
+            <p>Clean, focused form presentation in modals</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Hero Section */
+    .hero {
+        text-align: center;
+        padding: 3rem 1rem;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        border-radius: var(--border-radius);
+        margin-bottom: 3rem;
+    }
+
+    .hero h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .hero p {
+        font-size: 1.125rem;
+        opacity: 0.9;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 3rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin-top: 0.5rem;
+    }
+
+    /* Menu Section */
+    .menu-section {
+        margin-bottom: 3rem;
+    }
+
+    .menu-section h2 {
+        font-size: 1.75rem;
+        margin-bottom: 1.5rem;
+        color: var(--gray-900);
+    }
+
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .menu-card {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: var(--transition);
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+
+    .menu-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .menu-card a {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .menu-card-primary {
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .menu-card-secondary {
+        border-left: 4px solid var(--gray-500);
+    }
+
+    .menu-card-info {
+        border-left: 4px solid #3b82f6;
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .menu-card-warning {
+        border-left: 4px solid var(--warning-color);
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .menu-card-success {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .menu-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .menu-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        color: var(--gray-900);
+    }
+
+    .menu-card p {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        flex-grow: 1;
+        margin-bottom: 1rem;
+    }
+
+    .menu-action {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    /* Course Card */
+    .courses-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .course-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .course-card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .course-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .course-header h4 {
+        margin: 0;
+        font-size: 1.125rem;
+    }
+
+    .course-body {
+        padding: 1.5rem;
+        font-size: 0.875rem;
+    }
+
+    .course-body p {
+        margin: 0.75rem 0;
+    }
+
+    .course-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--gray-200);
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* Guide Section */
+    .guide-section {
+        background: var(--gray-50);
+        padding: 2rem;
+        border-radius: var(--border-radius);
+    }
+
+    .guide-section h2 {
+        margin-bottom: 2rem;
+    }
+
+    .guide-steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .step {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        position: relative;
+        padding-left: 3.5rem;
+    }
+
+    .step-number {
+        position: absolute;
+        left: 1rem;
+        top: 1rem;
+        width: 2rem;
+        height: 2rem;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .step h4 {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .step p {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin: 0;
+    }
+
+    /* Features Section */
+    .features-section {
+        margin-bottom: 3rem;
+    }
+
+    .features-section h2 {
+        margin-bottom: 2rem;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .feature {
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .feature h4 {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .feature p {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin: 0;
+    }
+
+    .link {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .link:hover {
+        text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .hero {
+            padding: 2rem 1rem;
+        }
+
+        .hero h1 {
+            font-size: 1.75rem;
+        }
+
+        .menu-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .guide-steps {
+            grid-template-columns: 1fr;
+        }
+
+        .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}

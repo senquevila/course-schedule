@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Course Calendar{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="navbar-brand">Course Calendar</a>
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/courses/">Courses</a></li>
+                <li><a href="/admin/">Admin</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+                <button type="button" class="alert-close" onclick="this.parentElement.style.display='none';">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2026 Course Calendar Application</p>
+    </footer>
+
+    <!-- Modal for HTMX forms -->
+    <div id="modal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="document.getElementById('modal').style.display='none'"></div>
+        <div class="modal-content" id="modal-body">
+        </div>
+    </div>
+
+    <script>
+        // Open modal with HTMX response
+        document.addEventListener('htmx:afterSwap', function(event) {
+            if (event.detail.xhr.status === 400 || event.detail.xhr.status === 404) {
+                // Error handling
+                console.error('Error:', event.detail.xhr.status);
+            }
+        });
+
+        // Open modal when form is loaded
+        function openModal() {
+            document.getElementById('modal').style.display = 'block';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // HTMX configuration
+        htmx.config.defaultIndicatorStyle = 'spinner';
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

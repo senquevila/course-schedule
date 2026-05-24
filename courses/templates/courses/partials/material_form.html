@@ -1,0 +1,52 @@
+<div class="modal-header">
+    <h2 class="modal-title">{% if is_create %}Add Material{% else %}Edit Material{% endif %}</h2>
+    <button class="modal-close" onclick="closeModal()">×</button>
+</div>
+
+<form method="POST"
+      hx-post="{% if is_create %}{% url 'courses:material-create' course.id topic.id %}{% else %}{% url 'courses:material-edit' course.id topic.id material.id %}{% endif %}"
+      hx-target="{% if is_create %}#materials-table{% else %}#material-{{ material.id }}{% endif %}"
+      hx-swap="{% if is_create %}beforeend{% else %}outerHTML{% endif %}"
+      hx-on::after-request="if(event.detail.xhr.status === 200 || event.detail.xhr.status === 201) { closeModal(); }">
+    {% csrf_token %}
+
+    <div class="form-group">
+        <label for="{{ form.code.id_for_label }}">{{ form.code.label }}</label>
+        {{ form.code }}
+        {% if form.code.errors %}
+        <div class="form-error">{{ form.code.errors.0 }}</div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+        {{ form.name }}
+        {% if form.name.errors %}
+        <div class="form-error">{{ form.name.errors.0 }}</div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.material_type.id_for_label }}">{{ form.material_type.label }}</label>
+        {{ form.material_type }}
+        {% if form.material_type.errors %}
+        <div class="form-error">{{ form.material_type.errors.0 }}</div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.url_or_path.id_for_label }}">{{ form.url_or_path.label }}</label>
+        {{ form.url_or_path }}
+        {% if form.url_or_path.errors %}
+        <div class="form-error">{{ form.url_or_path.errors.0 }}</div>
+        {% endif %}
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="htmx-indicator">...</span>
+            {% if is_create %}Add Material{% else %}Save Changes{% endif %}
+        </button>
+    </div>
+</form>

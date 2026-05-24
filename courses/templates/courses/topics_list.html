@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Topics - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+    <a href="/">Home</a> /
+    <span>{{ course.name }}</span> /
+    <span>Topics</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Topics</h1>
+        <p class="page-subtitle">{{ course.name }}</p>
+    </div>
+    <button class="btn btn-primary"
+            hx-get="{% url 'courses:topic-create' course.id %}"
+            hx-target="#modal-body"
+            onclick="openModal()">
+        + Add Topic
+    </button>
+</div>
+
+{% if topics %}
+<table>
+    <thead>
+        <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Order</th>
+            <th>Description</th>
+            <th>Materials</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="topics-table">
+        {% for topic in topics %}
+        {% include "courses/partials/topic_item.html" %}
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">
+    <p>No topics added yet. <button class="btn btn-primary btn-sm"
+                                     hx-get="{% url 'courses:topic-create' course.id %}"
+                                     hx-target="#modal-body"
+                                     onclick="openModal()">
+        Add one now
+    </button></p>
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="/" class="btn btn-secondary">← Back</a>
+</div>
+{% endblock %}
