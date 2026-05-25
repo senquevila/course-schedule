@@ -2,17 +2,15 @@
 
 <tr id="schedule-{{ schedule.id }}"
     hx-confirm="Are you sure you want to delete this schedule?">
-    <td>{{ schedule.get_day_of_week_display }}</td>
+    <td>
+        <span title="{{ schedule.get_days_display }}">
+            {{ schedule.get_days_short }}
+        </span>
+    </td>
     <td>{{ schedule.start_time|time:"H:i" }}</td>
     <td>{{ schedule.end_time|time:"H:i" }}</td>
     <td>
-        {% with start=schedule.start_time end=schedule.end_time %}
-        {% if start and end %}
-            {% load humanize %}
-            {% comment %}Calculate duration{% endcomment %}
-            {{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}
-        {% endif %}
-        {% endwith %}
+        {{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}
     </td>
     <td>
         <div class="actions">

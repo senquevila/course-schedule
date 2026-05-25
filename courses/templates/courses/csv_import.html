@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Import from CSV - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+    <a href="/">Home</a> /
+    <a href="{% url 'courses:topic-list' course.id %}">{{ course.name }} Topics</a> /
+    <span>Import CSV</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Import Topics from CSV</h1>
+        <p class="page-subtitle">Upload a structured CSV file to bulk import topics into {{ course.name }}</p>
+    </div>
+</div>
+
+<div class="import-container">
+    <div class="import-info">
+        <h3>📋 CSV Format</h3>
+        <p>Your CSV file should contain the following columns:</p>
+        <ul style="margin: 1rem 0; padding-left: 2rem;">
+            <li><strong>code</strong> - Topic code (e.g., T01)</li>
+            <li><strong>name</strong> - Topic name (required)</li>
+            <li><strong>description</strong> - Topic description (optional)</li>
+            <li><strong>materials</strong> - Book/resource references, comma or pipe-separated (optional)</li>
+            <li><strong>order</strong> - Sort order number (optional)</li>
+        </ul>
+    </div>
+
+    <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 2rem;">
+        <h4 style="margin-top: 0;">Example CSV:</h4>
+        <pre style="background: white; padding: 1rem; border-radius: 0.5rem; overflow-x: auto;"><code>code,name,description,materials,order
+T01,Introduction to Programming,Learn the basics,Tanenbaum Ch.1 | Silberschatz Ch.1,1
+T02,Variables and Data Types,Understanding types,Tanenbaum Ch.2,2
+T03,Control Structures,Loops and conditions,Book Reference,3</code></pre>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="import-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+            {{ form.csv_file.label_tag }}
+            {{ form.csv_file }}
+            {% if form.csv_file.errors %}
+                <div class="form-error">{{ form.csv_file.errors|first }}</div>
+            {% endif %}
+            <small class="text-muted">Maximum file size: 10MB</small>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-error">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="form-actions" style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary btn-lg">
+                Upload & Review Topics
+            </button>
+            <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .import-container {
+        max-width: 800px;
+        margin: 2rem auto;
+    }
+
+    .import-info {
+        background: #f0f9ff;
+        border-left: 4px solid var(--primary-color);
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+    }
+
+    .import-info h3 {
+        margin-top: 0;
+        color: var(--primary-color);
+    }
+
+    .import-info ul {
+        list-style: disc;
+    }
+
+    .import-info li {
+        margin-bottom: 0.5rem;
+    }
+
+    .import-form {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        border-top: 2px solid var(--gray-200);
+        padding-top: 2rem;
+    }
+
+    .btn-lg {
+        padding: 1rem 2rem;
+        font-size: 1.125rem;
+        flex: 1;
+    }
+
+    .text-muted {
+        color: var(--gray-600);
+        font-size: 0.875rem;
+    }
+
+    pre {
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+        .import-form {
+            padding: 1.5rem;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn-lg {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

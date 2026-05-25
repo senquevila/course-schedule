@@ -47,11 +47,11 @@ class MaterialAdmin(admin.ModelAdmin):
 
 @admin.register(CourseSchedule)
 class CourseScheduleAdmin(admin.ModelAdmin):
-    list_display = ('course', 'get_day_of_week_display', 'start_time', 'end_time', 'created_at')
-    list_filter = ('course', 'day_of_week')
+    list_display = ('course', 'days', 'start_time', 'end_time', 'created_at')
+    list_filter = ('course', 'start_time')
     search_fields = ('course__name',)
     raw_id_fields = ('course',)
-    ordering = ('course', 'day_of_week', 'start_time')
+    ordering = ('course', 'start_time')
 
 
 @admin.register(CourseSession)

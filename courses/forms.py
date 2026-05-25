@@ -1,5 +1,5 @@
 from django import forms
-from .models import Topic, Material, CourseSchedule
+from .models import Topic, Material, CourseSchedule, Course
 
 
 class TopicForm(forms.ModelForm):
@@ -62,7 +62,7 @@ class MaterialForm(forms.ModelForm):
 
 
 class CourseScheduleForm(forms.Form):
-    """Form for creating and editing course schedules"""
+    """Form for creating and editing course schedules with multiple days"""
 
     DAY_CHOICES = [
         (0, 'Sunday'),
@@ -81,7 +81,8 @@ class CourseScheduleForm(forms.Form):
             'class': 'form-checkbox'
         }),
         required=True,
-        label='Days of Week'
+        label='Days of Week',
+        help_text='Select all days this schedule applies to'
     )
 
     start_time = forms.TimeField(
@@ -106,6 +107,7 @@ class CourseScheduleForm(forms.Form):
         cleaned_data = super().clean()
         start_time = cleaned_data.get('start_time')
         end_time = cleaned_data.get('end_time')
+        days = cleaned_data.get('days')
 
         if start_time and end_time:
             if start_time >= end_time:
@@ -113,4 +115,156 @@ class CourseScheduleForm(forms.Form):
                     "End time must be after start time."
                 )
 
+        if not days:
+            raise forms.ValidationError(
+                "Please select at least one day."
+            )
+
+        # Convert days to integers
+        cleaned_data['days'] = [int(d) for d in days]
         return cleaned_data
+
+
+class SyllabusUploadForm(forms.Form):
+    """Form for uploading a syllabus document to extract topics"""
+
+    syllabus_file = forms.FileField(
+        widget=forms.FileInput(attrs={
+            'class': 'form-input',
+            'accept': '.txt,.pdf,.docx,.doc',
+            'required': True
+        }),
+        label='Syllabus Document',
+        help_text='Upload a text, PDF, or Word document with your course syllabus'
+    )
+
+    def clean_syllabus_file(self):
+        """Validate file type and size"""
+        file = self.cleaned_data.get('syllabus_file')
+
+        if file:
+            # Check file size (max 10MB)
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError('File size must not exceed 10MB.')
+
+            # Check file type
+            allowed_extensions = ['.txt', '.pdf', '.docx', '.doc']
+            file_name = file.name.lower()
+
+            if not any(file_name.endswith(ext) for ext in allowed_extensions):
+                raise forms.ValidationError(
+                    f'File type not supported. Allowed types: {", ".join(allowed_extensions)}'
+                )
+
+        return file
+
+
+class CSVImportForm(forms.Form):
+    """Form for importing topics from a structured CSV file"""
+
+    csv_file = forms.FileField(
+        widget=forms.FileInput(attrs={
+            'class': 'form-input',
+            'accept': '.csv',
+            'required': True
+        }),
+        label='CSV File',
+        help_text='CSV file with columns: code, name, description, materials, order'
+    )
+
+    def clean_csv_file(self):
+        """Validate CSV file"""
+        file = self.cleaned_data.get('csv_file')
+
+        if file:
+            # Check file extension
+            if not file.name.lower().endswith('.csv'):
+                raise forms.ValidationError('File must be a CSV file (.csv)')
+
+            # Check file size (max 10MB)
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError('File size must not exceed 10MB.')
+
+        return file
+
+
+class TopicReviewForm(forms.Form):
+    """Form for reviewing and editing extracted topics before saving"""
+
+    def __init__(self, topics_data, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Dynamically create fields for each topic
+        for i, topic in enumerate(topics_data):
+            self.fields[f'topic_{i}_code'] = forms.CharField(
+                initial=topic.get('code', ''),
+                widget=forms.TextInput(attrs={
+                    'class': 'form-input',
+                    'placeholder': 'T01',
+                    'size': '10'
+                }),
+                label=f'Code'
+            )
+
+            self.fields[f'topic_{i}_name'] = forms.CharField(
+                initial=topic.get('name', ''),
+                widget=forms.TextInput(attrs={
+                    'class': 'form-input',
+                    'placeholder': 'Topic name'
+                }),
+                label=f'Name'
+            )
+
+            self.fields[f'topic_{i}_description'] = forms.CharField(
+                initial=topic.get('description', ''),
+                widget=forms.Textarea(attrs={
+                    'class': 'form-textarea',
+                    'rows': 2,
+                    'placeholder': 'Topic description (optional)'
+                }),
+                label=f'Description',
+                required=False
+            )
+
+            self.fields[f'topic_{i}_order'] = forms.IntegerField(
+                initial=topic.get('order', i + 1),
+                widget=forms.NumberInput(attrs={
+                    'class': 'form-input',
+                    'size': '5'
+                }),
+                label=f'Order'
+            )
+
+            self.fields[f'topic_{i}_include'] = forms.BooleanField(
+                initial=True,
+                widget=forms.CheckboxInput(attrs={
+                    'class': 'form-checkbox'
+                }),
+                label=f'Include this topic',
+                required=False
+            )
+
+    def get_reviewed_topics(self):
+        """Extract reviewed and cleaned topics from form data"""
+        topics = []
+
+        for key, value in self.cleaned_data.items():
+            if key.startswith('topic_') and key.endswith('_code'):
+                # Extract topic index
+                parts = key.split('_')
+                topic_idx = int(parts[1])
+
+                # Check if topic should be included
+                include_key = f'topic_{topic_idx}_include'
+                if not self.cleaned_data.get(include_key, False):
+                    continue
+
+                topics.append({
+                    'code': self.cleaned_data.get(f'topic_{topic_idx}_code', ''),
+                    'name': self.cleaned_data.get(f'topic_{topic_idx}_name', ''),
+                    'description': self.cleaned_data.get(f'topic_{topic_idx}_description', ''),
+                    'order': self.cleaned_data.get(f'topic_{topic_idx}_order', topic_idx + 1),
+                })
+
+        # Sort by order
+        return sorted(topics, key=lambda x: x['order'])

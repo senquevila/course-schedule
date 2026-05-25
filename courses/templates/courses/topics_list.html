@@ -14,12 +14,20 @@
         <h1 class="page-title">Topics</h1>
         <p class="page-subtitle">{{ course.name }}</p>
     </div>
-    <button class="btn btn-primary"
-            hx-get="{% url 'courses:topic-create' course.id %}"
-            hx-target="#modal-body"
-            onclick="openModal()">
-        + Add Topic
-    </button>
+    <div class="header-actions">
+        <button class="btn btn-primary"
+                hx-get="{% url 'courses:topic-create' course.id %}"
+                hx-target="#modal-body"
+                onclick="openModal()">
+            + Add Topic
+        </button>
+        <a href="{% url 'courses:syllabus-upload' course.id %}" class="btn btn-secondary">
+            📄 Import from Syllabus
+        </a>
+        <a href="{% url 'courses:csv-import' course.id %}" class="btn btn-secondary">
+            📊 Import from CSV
+        </a>
+    </div>
 </div>
 
 {% if topics %}

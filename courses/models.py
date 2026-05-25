@@ -46,7 +46,7 @@ class Course(models.Model):
         ordering = ['period', 'name']
         verbose_name = 'Course'
         verbose_name_plural = 'Courses'
-        unique_together = ['assignature', 'period']
+        unique_together = ['assignature', 'name', 'period']
 
     def __str__(self):
         return f"{self.name} ({self.period.name})"
@@ -99,30 +99,32 @@ class Material(models.Model):
 
 class CourseSchedule(models.Model):
     """Represents the recurring weekly pattern for a course"""
-    DAY_CHOICES = [
-        (0, 'Sunday'),
-        (1, 'Monday'),
-        (2, 'Tuesday'),
-        (3, 'Wednesday'),
-        (4, 'Thursday'),
-        (5, 'Friday'),
-        (6, 'Saturday'),
-    ]
-
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='schedules')
-    day_of_week = models.IntegerField(choices=DAY_CHOICES)
+    days = models.JSONField(default=list, help_text="List of day numbers: 0=Sunday, 1=Monday, ..., 6=Saturday")
     start_time = models.TimeField()
     end_time = models.TimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['course', 'day_of_week', 'start_time']
+        ordering = ['course', 'start_time']
         verbose_name = 'Course Schedule'
         verbose_name_plural = 'Course Schedules'
-        unique_together = ['course', 'day_of_week', 'start_time']
+        unique_together = ['course', 'start_time', 'end_time']
 
     def __str__(self):
-        return f"{self.course.name} - {self.get_day_of_week_display()} {self.start_time}-{self.end_time}"
+        day_names = {0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat'}
+        days_str = ', '.join([day_names.get(d, str(d)) for d in sorted(self.days)])
+        return f"{self.course.name} - {days_str} {self.start_time}-{self.end_time}"
+
+    def get_days_display(self):
+        """Return a human-readable string of the scheduled days"""
+        day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        return ', '.join([day_names[d] for d in sorted(self.days)])
+
+    def get_days_short(self):
+        """Return abbreviated day names"""
+        day_names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        return ', '.join([day_names[d] for d in sorted(self.days)])
 
 
 class CourseSession(models.Model):
