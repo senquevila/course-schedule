@@ -1,5 +1,5 @@
 """
-ASGI config for coursecal project.
+ASGI config for course_schedule project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'coursecal.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'course_schedule.settings')
 
 application = get_asgi_application()

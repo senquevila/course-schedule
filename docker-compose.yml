@@ -3,9 +3,9 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: coursecal-postgres
+    container_name: course_schedule-postgres
     environment:
-      POSTGRES_DB: ${DB_NAME:-coursecal}
+      POSTGRES_DB: ${DB_NAME:-course_schedule}
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:

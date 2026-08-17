@@ -8,7 +8,7 @@ A web-based course calendar application that helps instructors manage teaching s
 - **Backend:** Django, Django REST Framework
 - **Frontend:** HTMX with HTML/CSS
 - **Database:** PostgreSQL
-- **Repository:** ~/Documents/GitHub/senquevila/course-programming
+- **Repository:** ~/Documents/GitHub/senquevila/course-schedule
 
 ---
 
@@ -482,11 +482,11 @@ Starting from CourseDetail, user switches views:
 ## File Structure to Create
 
 ```
-course-programming/
+course-schedule/
 ├── manage.py
 ├── requirements.txt
 ├── db.sqlite3 (PostgreSQL connection)
-├── coursecal/
+├── course_schedule/
 │   ├── settings.py
 │   ├── urls.py
 │   ├── asgi.py

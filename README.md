@@ -2,7 +2,7 @@
 
 A web-based course calendar application that helps instructors manage teaching schedules by automatically generating course sessions, distributing topics across sessions, and displaying them in multiple calendar views (month, week, day, agenda).
 
-**Repository:** `~/Documents/GitHub/senquevila/course-programming`
+**Repository:** `~/Documents/GitHub/senquevila/course-schedule`
 
 ## Technology Stack
 
@@ -14,8 +14,8 @@ A web-based course calendar application that helps instructors manage teaching s
 ## Project Structure
 
 ```
-course-programming/
-├── coursecal/                    # Main Django project configuration
+course-schedule/
+├── course_schedule/                    # Main Django project configuration
 │   ├── settings.py              # Django settings (DB, apps, middleware)
 │   ├── urls.py                  # Root URL routing
 │   ├── wsgi.py                  # WSGI application
@@ -134,7 +134,7 @@ Represents a specific course session instance on a particular date
 
 1. **Clone the repository**
    ```bash
-   cd ~/Documents/GitHub/senquevila/course-programming
+   cd ~/Documents/GitHub/senquevila/course-schedule
    ```
 
 2. **Create and activate virtual environment**
@@ -368,8 +368,8 @@ python -m flake8 .
 
 | File | Purpose |
 |------|---------|
-| `coursecal/settings.py` | Django configuration, database, installed apps |
-| `coursecal/urls.py` | Root URL routing |
+| `course_schedule/settings.py` | Django configuration, database, installed apps |
+| `course_schedule/urls.py` | Root URL routing |
 | `courses/models.py` | Database models definition |
 | `courses/views.py` | API views and template views (TODO) |
 | `courses/serializers.py` | DRF serializers (TODO) |
@@ -411,4 +411,4 @@ Development workflow:
 ## Contact
 
 Project by: senquevila
-Repository: ~/Documents/GitHub/senquevila/course-programming
+Repository: ~/Documents/GitHub/senquevila/course-schedule
