@@ -7,8 +7,8 @@ from django.urls import reverse_lazy
 from django.db.models import Max
 
 from .models import Course, Topic, Material, CourseSchedule
-from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm, CSVImportForm
-from .syllabus_parser import parse_syllabus
+from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm
+from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
 
 # ==================== HOME VIEWS ====================
@@ -521,18 +521,11 @@ class SyllabusUploadView(View):
             uploaded_file = request.FILES['syllabus_file']
 
             try:
-                # Read file content
                 file_content = uploaded_file.read()
-
-                # Parse syllabus and extract topics
-                extracted_topics = parse_syllabus(file_content, uploaded_file.name)
+                extracted_topics = parse_syllabus_csv(file_content)
 
                 if not extracted_topics:
-                    messages.warning(
-                        request,
-                        'No topics could be extracted from the document. '
-                        'Please check the format and try again.'
-                    )
+                    messages.warning(request, 'No topics found in the CSV file.')
                     return render(
                         request,
                         'courses/syllabus_upload.html',
@@ -549,6 +542,16 @@ class SyllabusUploadView(View):
                 # Redirect to review page
                 return redirect('courses:syllabus-review', course_id=course_id)
 
+            except SyllabusCSVError as e:
+                messages.error(request, str(e))
+                return render(
+                    request,
+                    'courses/syllabus_upload.html',
+                    {
+                        'course': course,
+                        'form': form,
+                    }
+                )
             except Exception as e:
                 messages.error(
                     request,
@@ -666,233 +669,3 @@ class SyllabusReviewView(View):
                     'topic_count': len(extracted_topics),
                 }
             )
-
-
-# ==================== CSV IMPORT VIEWS ====================
-
-class CSVImportView(View):
-    """Handle CSV file upload for bulk topic import"""
-
-    def get(self, request, course_id):
-        """Display CSV upload form"""
-        course = get_object_or_404(Course, id=course_id)
-        form = CSVImportForm()
-
-        return render(
-            request,
-            'courses/csv_import.html',
-            {'course': course, 'form': form}
-        )
-
-    def post(self, request, course_id):
-        """Process CSV file and extract topics"""
-        import csv
-        from io import TextIOWrapper
-
-        course = get_object_or_404(Course, id=course_id)
-        form = CSVImportForm(request.POST, request.FILES)
-
-        if form.is_valid():
-            csv_file = request.FILES['csv_file']
-
-            try:
-                # Read CSV file
-                stream = TextIOWrapper(csv_file.file, encoding='utf-8')
-                reader = csv.DictReader(stream)
-
-                topics = []
-                for row_num, row in enumerate(reader, start=2):
-                    # Skip empty rows
-                    if not any(row.values()):
-                        continue
-
-                    # Validate required fields
-                    name = row.get('name', '').strip()
-                    if not name:
-                        messages.error(
-                            request,
-                            f'Row {row_num}: Missing or empty "name" column'
-                        )
-                        return render(
-                            request,
-                            'courses/csv_import.html',
-                            {'course': course, 'form': form}
-                        )
-
-                    # Parse order field safely
-                    try:
-                        order = int(row.get('order', len(topics)+1))
-                    except (ValueError, TypeError):
-                        order = len(topics) + 1
-
-                    topics.append({
-                        'code': row.get('code', f'T{len(topics)+1:02d}').strip(),
-                        'name': name,
-                        'description': row.get('description', '').strip(),
-                        'materials': row.get('materials', '').strip(),
-                        'order': order,
-                    })
-
-                if not topics:
-                    messages.error(request, 'No topics found in CSV file')
-                    return render(
-                        request,
-                        'courses/csv_import.html',
-                        {'course': course, 'form': form}
-                    )
-
-                # Store topics in session for review
-                request.session['csv_topics'] = topics
-                request.session['csv_course_id'] = course_id
-
-                # Redirect to review page
-                return redirect('courses:csv-review', course_id=course_id)
-
-            except csv.Error as e:
-                messages.error(request, f'Error reading CSV: {str(e)}')
-                return render(
-                    request,
-                    'courses/csv_import.html',
-                    {'course': course, 'form': form}
-                )
-            except Exception as e:
-                messages.error(request, f'Error processing file: {str(e)}')
-                return render(
-                    request,
-                    'courses/csv_import.html',
-                    {'course': course, 'form': form}
-                )
-
-        return render(
-            request,
-            'courses/csv_import.html',
-            {'course': course, 'form': form}
-        )
-
-
-class CSVReviewView(View):
-    """Review and import topics from CSV"""
-
-    def get(self, request, course_id):
-        """Display CSV topics review form"""
-        course = get_object_or_404(Course, id=course_id)
-        csv_topics = request.session.get('csv_topics', [])
-
-        if not csv_topics:
-            messages.error(request, 'No topics to review. Please upload a CSV file first.')
-            return redirect('courses:csv-import', course_id=course_id)
-
-        # Create form with topics
-        form = TopicReviewForm(csv_topics)
-
-        return render(
-            request,
-            'courses/csv_review.html',
-            {
-                'course': course,
-                'form': form,
-                'topic_count': len(csv_topics),
-                'is_csv': True,
-            }
-        )
-
-    def post(self, request, course_id):
-        """Import selected topics from CSV"""
-        course = get_object_or_404(Course, id=course_id)
-        csv_topics = request.session.get('csv_topics', [])
-
-        if not csv_topics:
-            messages.error(request, 'No topics to import.')
-            return redirect('courses:csv-import', course_id=course_id)
-
-        form = TopicReviewForm(csv_topics, request.POST)
-
-        if form.is_valid():
-            reviewed_topics = form.get_reviewed_topics()
-
-            if not reviewed_topics:
-                messages.error(request, 'No topics selected for import.')
-                return render(
-                    request,
-                    'courses/csv_review.html',
-                    {
-                        'course': course,
-                        'form': form,
-                        'topic_count': len(csv_topics),
-                        'is_csv': True,
-                    }
-                )
-
-            # Create topics in database
-            try:
-                created_count = 0
-                for topic_data in reviewed_topics:
-                    Topic.objects.create(
-                        course=course,
-                        code=topic_data['code'],
-                        name=topic_data['name'],
-                        description=topic_data.get('description', ''),
-                        order=topic_data['order'],
-                    )
-                    created_count += 1
-
-                # Also create materials if provided
-                for i, topic_data in enumerate(reviewed_topics):
-                    materials_str = topic_data.get('materials', '').strip()
-                    if materials_str:
-                        # Get the created topic
-                        topic = Topic.objects.filter(
-                            course=course,
-                            code=topic_data['code']
-                        ).first()
-
-                        if topic:
-                            # Create material record for each book reference
-                            materials = [m.strip() for m in materials_str.split('|') if m.strip()]
-                            for j, material in enumerate(materials):
-                                try:
-                                    Material.objects.create(
-                                        topic=topic,
-                                        code=f'M{j+1:02d}',
-                                        name=material,
-                                        material_type='document',
-                                        url_or_path=material,
-                                    )
-                                except Exception as material_error:
-                                    # Log material creation error but continue
-                                    print(f"Warning: Could not create material for {topic.name}: {material_error}")
-
-                messages.success(
-                    request,
-                    f'Successfully imported {created_count} topics and their materials!'
-                )
-
-                # Clean up session
-                request.session.pop('csv_topics', None)
-                request.session.pop('csv_course_id', None)
-
-                return redirect('courses:topic-list', course_id=course_id)
-
-            except Exception as e:
-                messages.error(request, f'Error creating topics: {str(e)}')
-                return render(
-                    request,
-                    'courses/csv_review.html',
-                    {
-                        'course': course,
-                        'form': form,
-                        'topic_count': len(csv_topics),
-                        'is_csv': True,
-                    }
-                )
-
-        return render(
-            request,
-            'courses/csv_review.html',
-            {
-                'course': course,
-                'form': form,
-                'topic_count': len(csv_topics),
-                'is_csv': True,
-            }
-        )

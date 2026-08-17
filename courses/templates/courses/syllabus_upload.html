@@ -12,7 +12,7 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Import Topics from Syllabus</h1>
-        <p class="page-subtitle">Upload a document to automatically extract course topics</p>
+        <p class="page-subtitle">Upload a CSV file to bulk-create course topics</p>
     </div>
 </div>
 
@@ -35,34 +35,18 @@
             </div>
 
             <div class="info-box">
-                <h4>📄 Supported Formats</h4>
-                <ul>
-                    <li><strong>Text files (.txt)</strong> - Plain text with one topic per line</li>
-                    <li><strong>PDF files (.pdf)</strong> - Scanned or digital syllabi</li>
-                    <li><strong>Word documents (.docx, .doc)</strong> - Microsoft Word formats</li>
-                </ul>
-            </div>
-
-            <div class="info-box">
-                <h4>📋 Recommended Format</h4>
-                <p>For best results, format your syllabus as one of the following:</p>
-                <pre><code># Numbered List
-1. Topic Name
-2. Another Topic
-3. Third Topic
-
-# Or with descriptions
-1. Arrays - Basic array concepts and operations
-2. Linked Lists - Introduction to linked list data structures
-
-# Or bullet list
-- Topic Name
-- Another Topic
-- Third Topic
-
-# Or with colons
-Topic 1: Introduction to Programming
-Topic 2: Variables and Data Types</code></pre>
+                <h4>📄 Required Template</h4>
+                <p>The file must be a <code>.csv</code> (max 10MB) with this exact header row, in order:</p>
+                <pre><code>code,name,description,order
+T01,Introduction to Programming,Basic programming concepts,1
+T02,Variables and Data Types,Understanding different data types,2
+T03,Control Flow,if/else and loops,3</code></pre>
+                <p><code>code</code> and <code>name</code> are required; <code>description</code> may be empty; <code>order</code> must be a positive integer.</p>
+                <a class="btn btn-secondary btn-sm"
+                   download="syllabus_template.csv"
+                   href="data:text/csv;charset=utf-8,code%2Cname%2Cdescription%2Corder%0AT01%2CIntroduction%20to%20Programming%2CBasic%20programming%20concepts%2C1%0AT02%2CVariables%20and%20Data%20Types%2CUnderstanding%20different%20data%20types%2C2%0AT03%2CControl%20Flow%2Cif%2Felse%20and%20loops%2C3">
+                    ⬇️ Download CSV Template
+                </a>
             </div>
 
             <div class="form-actions">

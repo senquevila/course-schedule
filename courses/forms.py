@@ -126,16 +126,16 @@ class CourseScheduleForm(forms.Form):
 
 
 class SyllabusUploadForm(forms.Form):
-    """Form for uploading a syllabus document to extract topics"""
+    """Form for uploading a syllabus CSV to extract topics"""
 
     syllabus_file = forms.FileField(
         widget=forms.FileInput(attrs={
             'class': 'form-input',
-            'accept': '.txt,.pdf,.docx,.doc',
+            'accept': '.csv',
             'required': True
         }),
-        label='Syllabus Document',
-        help_text='Upload a text, PDF, or Word document with your course syllabus'
+        label='Syllabus CSV',
+        help_text='Upload a CSV file with columns: code,name,description,order'
     )
 
     def clean_syllabus_file(self):
@@ -143,47 +143,11 @@ class SyllabusUploadForm(forms.Form):
         file = self.cleaned_data.get('syllabus_file')
 
         if file:
-            # Check file size (max 10MB)
-            if file.size > 10 * 1024 * 1024:
-                raise forms.ValidationError('File size must not exceed 10MB.')
-
-            # Check file type
-            allowed_extensions = ['.txt', '.pdf', '.docx', '.doc']
-            file_name = file.name.lower()
-
-            if not any(file_name.endswith(ext) for ext in allowed_extensions):
-                raise forms.ValidationError(
-                    f'File type not supported. Allowed types: {", ".join(allowed_extensions)}'
-                )
-
-        return file
-
-
-class CSVImportForm(forms.Form):
-    """Form for importing topics from a structured CSV file"""
-
-    csv_file = forms.FileField(
-        widget=forms.FileInput(attrs={
-            'class': 'form-input',
-            'accept': '.csv',
-            'required': True
-        }),
-        label='CSV File',
-        help_text='CSV file with columns: code, name, description, materials, order'
-    )
-
-    def clean_csv_file(self):
-        """Validate CSV file"""
-        file = self.cleaned_data.get('csv_file')
-
-        if file:
-            # Check file extension
             if not file.name.lower().endswith('.csv'):
-                raise forms.ValidationError('File must be a CSV file (.csv)')
+                raise forms.ValidationError('Only .csv files are supported')
 
-            # Check file size (max 10MB)
             if file.size > 10 * 1024 * 1024:
-                raise forms.ValidationError('File size must not exceed 10MB.')
+                raise forms.ValidationError('File size must not exceed 10MB')
 
         return file
 

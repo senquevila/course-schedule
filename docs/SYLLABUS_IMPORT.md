@@ -2,24 +2,21 @@
 
 ## Overview
 
-Users can now import course topics directly from a syllabus document (PDF, Word, or text file). The system automatically extracts topics and allows for review and editing before importing them into the course.
+Users can import course topics in bulk from a CSV file. The file must follow a fixed column template — no flexible parsing, no other file formats. Extracted rows can be reviewed and edited before importing.
 
 ## Features
 
-✅ **Multiple File Format Support**
-- Text files (.txt)
-- PDF documents (.pdf)
-- Word documents (.docx, .doc)
+✅ **File Format Support**
+- CSV files (.csv) only
 - File size limit: 10MB
 
-✅ **Intelligent Topic Extraction**
-- Numbered lists (1. Topic, 2. Topic)
-- Bullet points (- Topic, • Topic, * Topic)
-- Colon-separated format (Topic: Description)
-- Flexible parsing for various syllabus formats
+✅ **Rigid Template**
+- Fixed columns, in order: `code,name,description,order`
+- Header row required, exact column names
+- One topic per row
 
 ✅ **Review & Edit Before Import**
-- Preview extracted topics
+- Preview parsed rows
 - Edit topic code, name, and description
 - Adjust topic order
 - Select which topics to include
@@ -27,21 +24,35 @@ Users can now import course topics directly from a syllabus document (PDF, Word,
 
 ✅ **One-Click Import**
 - Create multiple topics at once
-- Automatic code generation (T01, T02, etc.)
 - Success notification with count
+
+## CSV Template
+
+```csv
+code,name,description,order
+T01,Introduction to Programming,Basic programming concepts,1
+T02,Variables and Data Types,Understanding different data types,2
+T03,Control Flow,if/else and loops,3
+```
+
+Rules:
+- Header row is required and must match exactly: `code,name,description,order`
+- `code` and `name` are required; `description` may be empty
+- `order` must be a positive integer; rows are otherwise imported in file order
+- Extra or missing columns → the whole file is rejected with an error
 
 ## How to Use
 
-### Step 1: Upload Syllabus
+### Step 1: Upload CSV
 
 1. Navigate to a course's Topics page
 2. Click **"📄 Import from Syllabus"** button
-3. Select a document from your computer
+3. Select a `.csv` file matching the template
 4. Click **"Upload & Extract Topics"**
 
 ### Step 2: Review Topics
 
-The system extracts topics and displays them in editable cards:
+The system parses the CSV rows and displays them in editable cards:
 
 ```
 [✓] Code: T01
@@ -57,7 +68,7 @@ The system extracts topics and displays them in editable cards:
 
 Features:
 - **Checkbox**: Toggle to include/exclude topic
-- **Code**: Topic identifier (auto-generated)
+- **Code**: Topic identifier (from CSV, editable)
 - **Name**: Topic title
 - **Description**: Optional details
 - **Order**: Sequence number
@@ -69,76 +80,22 @@ Features:
 3. Click **"Import Selected Topics"**
 4. Topics are created in your course
 
-## Supported Syllabus Formats
-
-### Format 1: Numbered List
-```
-1. Introduction to Programming
-2. Variables and Data Types
-3. Control Flow (if/else)
-4. Functions and Methods
-5. Data Structures
-```
-
-### Format 2: Numbered with Descriptions
-```
-1. Arrays - Basic array concepts and operations
-2. Linked Lists - Introduction to linked list structures
-3. Stack and Queue - LIFO and FIFO principles
-4. Trees - Hierarchical data organization
-5. Graphs - Network representations
-```
-
-### Format 3: Bullet Points
-```
-- Introduction to Python
-- Data Types and Variables
-- Operators and Expressions
-- Control Structures
-- Functions and Modules
-```
-
-### Format 4: Colon Separator
-```
-Topic 1: Introduction to Programming
-Topic 2: Variables and Data Types
-Chapter 3: Control Flow Structures
-Module 4: Function Definition and Calling
-Unit 5: Working with Collections
-```
-
 ## Architecture
 
 ### Module: `courses/syllabus_parser.py`
 
-**Main Classes:**
-- `SyllabusParser` - Base parser with multiple extraction strategies
-- `TextParser` - Plain text file parser
-- `PDFParser` - PDF document parser
-- `DocxParser` - Word document parser
-
-**Key Methods:**
-- `parse()` - Main extraction method
-- `_parse_numbered_list()` - Extract from numbered lists
-- `_parse_bullet_list()` - Extract from bullet points
-- `_parse_lines_with_colon()` - Extract from colon-separated format
-- `_parse_simple_lines()` - Fallback simple line parsing
-
-**Functions:**
-- `extract_text_from_file()` - Convert file to text
-- `extract_text_from_pdf()` - PDF text extraction
-- `extract_text_from_docx()` - Word document text extraction
-- `parse_syllabus()` - Main entry point
+**Function:**
+- `parse_syllabus_csv(file_content: bytes)` - Reads the CSV, validates the header, and returns a list of `{code, name, description, order}` dicts. Raises a validation error if the header doesn't match the template.
 
 ### Forms: `courses/forms.py`
 
 **SyllabusUploadForm**
 - File input with validation
-- Supported file types: .txt, .pdf, .docx, .doc
+- Supported file type: `.csv` only
 - Max file size: 10MB
 
 **TopicReviewForm**
-- Dynamic form fields for each extracted topic
+- Dynamic form fields for each parsed row
 - Fields per topic: code, name, description, order, include checkbox
 - Validation and cleanup methods
 - Returns reviewed topics list
@@ -147,18 +104,17 @@ Unit 5: Working with Collections
 
 **SyllabusUploadView**
 - GET: Display upload form
-- POST: Process file, extract topics, store in session
+- POST: Process file, parse rows, store in session
 
 **SyllabusReviewView**
-- GET: Display review form with extracted topics
+- GET: Display review form with parsed topics
 - POST: Import selected topics into course
 
 ### Templates
 
 **syllabus_upload.html**
 - File upload form
-- Format recommendations
-- Example formats
+- Link/description of the required CSV template
 - Help text
 
 **syllabus_review.html**
@@ -179,23 +135,14 @@ path('courses/<int:course_id>/syllabus/review/',
      name='syllabus-review')
 ```
 
-## Parsing Strategy
-
-The system uses a fallback approach:
-
-1. **Try Numbered List** - Matches `1. Topic`, `1) Topic`, `1: Topic`
-2. **Try Bullet List** - Matches `- Topic`, `• Topic`, `* Topic`, `+ Topic`
-3. **Try Colon Format** - Matches `Code: Name` or `Name: Description`
-4. **Fallback Simple** - Parse any non-empty, meaningful lines
-
 ## Data Flow
 
 ```
-File Upload
+CSV Upload
     ↓
-Extract Text (based on file type)
+Validate Header (must match template exactly)
     ↓
-Parse Text (extraction strategies)
+Parse Rows
     ↓
 Store in Session
     ↓
@@ -213,80 +160,55 @@ Success Message + Redirect
 ## Error Handling
 
 **File Upload Errors:**
-- Invalid file type → "File type not supported"
+- Wrong file extension → "Only .csv files are supported"
 - File too large → "File size must not exceed 10MB"
 - Read error → "Error processing file: {details}"
 
-**Parsing Errors:**
-- No topics found → "No topics could be extracted from the document"
-- Parse error → "Error processing file: {details}"
+**Template Errors:**
+- Missing/incorrect header → "CSV must have columns: code,name,description,order"
+- Missing required field in a row → "Row {n}: code and name are required"
+- Invalid order value → "Row {n}: order must be a positive integer"
 
 **Import Errors:**
 - No topics selected → "No topics selected for import"
 - Database error → "Error creating topics: {details}"
 
-## Requirements for PDF & DOCX Support
-
-To support PDF and Word documents, install optional dependencies:
-
-```bash
-pip install PyPDF2 python-docx
-```
-
-If not installed:
-- PDF: Returns error message
-- DOCX: Returns error message
-- TXT: Works without additional packages
-
 ## Testing the Feature
 
-1. **Create a test syllabus file:**
-   ```
-   1. Introduction to Programming
-   2. Variables and Data Types
-   3. Control Structures
-   4. Functions
-   5. Data Structures
+1. **Create a test CSV file** matching the template:
+   ```csv
+   code,name,description,order
+   T01,Introduction to Programming,,1
+   T02,Variables and Data Types,,2
+   T03,Control Structures,,3
+   T04,Functions,,4
+   T05,Data Structures,,5
    ```
 
 2. **Navigate to Topics page** of a course
-
 3. **Click "Import from Syllabus"**
-
 4. **Upload the file**
-
 5. **Review extracted topics** - Should show 5 topics
-
 6. **Edit if needed** - Change names, descriptions, order
-
 7. **Click "Import"** - Topics created successfully
-
 8. **Verify** - Topics appear in the topics list
 
 ## Limitations & Future Enhancements
 
 ### Current Limitations
-- No OCR for scanned PDFs (text-based PDFs only)
-- Limited to simple, linear list extraction
-- No multi-level hierarchy support
+- CSV only — no PDF, Word, or free-text syllabus parsing
 - No automatic topic-to-session assignment
 
 ### Future Enhancements
-- [ ] OCR support for scanned documents
-- [ ] Table of contents extraction
-- [ ] Hierarchical topic structure (chapters/sections/topics)
-- [ ] Topic grouping by sections
+- [ ] Downloadable CSV template from the upload page
 - [ ] Automatic session assignment based on topics
-- [ ] Custom extraction rules per course type
-- [ ] AI-powered extraction using Claude API
-- [ ] Drag-to-reorder in review step
 - [ ] Bulk edit capabilities
 - [ ] Import multiple files at once
 
 ## Files Created/Modified
 
 **New Files:**
-- `courses/syllabus_parser.py` - Document parsing logic
+- `courses/syllabus_parser.py` - CSV parsing logic
 - `courses/templatetags/__init__.py` - Template tags package
 - `courses/templatetags/custom_filters.py` - Custom template filters
 - `courses/templates/courses/syllabus_upload.html` - Upload form
@@ -306,28 +228,24 @@ If not installed:
 - Django 6.0.5+
 - Python 3.13+
 
-**Optional (for PDF & DOCX support):**
-- PyPDF2 (for PDF text extraction)
-- python-docx (for Word document support)
+No optional dependencies — CSV parsing uses Python's built-in `csv` module.
 
 ## Example Workflow
 
 ### Scenario: Importing CS101 Topics
 
-**Input File (Syllabus.txt):**
-```
-CS101 - Data Structures
-
-Topics:
-1. Arrays and Lists
-2. Linked Lists and Pointers
-3. Stacks and Queues
-4. Trees and Graphs
-5. Sorting Algorithms
-6. Searching and Hashing
+**Input File (topics.csv):**
+```csv
+code,name,description,order
+T01,Arrays and Lists,,1
+T02,Linked Lists and Pointers,,2
+T03,Stacks and Queues,,3
+T04,Trees and Graphs,,4
+T05,Sorting Algorithms,,5
+T06,Searching and Hashing,,6
 ```
 
-**After Extraction (Review Page):**
+**After Parsing (Review Page):**
 ```
 [✓] T01 | Arrays and Lists | Order 1
 [✓] T02 | Linked Lists and Pointers | Order 2
@@ -344,12 +262,12 @@ Topics:
 
 ## Best Practices
 
-1. **Format syllabus before upload:**
-   - Use numbered or bullet lists
-   - One topic per line
-   - Avoid extra formatting
+1. **Prepare the CSV before upload:**
+   - Use the exact header row: `code,name,description,order`
+   - One topic per row
+   - Keep `order` sequential
 
-2. **Review extracted topics:**
+2. **Review parsed topics:**
    - Check topic names are correct
    - Verify order is sequential
    - Add descriptions if needed
@@ -360,27 +278,24 @@ Topics:
    - Verify topic sequence
 
 4. **Use appropriate codes:**
-   - T01, T02, T03 (auto-generated)
-   - Or customize with meaningful codes
+   - T01, T02, T03 or your own scheme
    - Keep them short and memorable
 
 ## Support & Troubleshooting
 
-**Q: PDF extraction not working**
-A: Install PyPDF2: `pip install PyPDF2`
-
-**Q: No topics extracted**
-A: Check format - try numbered list (1. Topic) or bullets (- Topic)
+**Q: My file is rejected**
+A: Confirm it's a `.csv` and the header row is exactly `code,name,description,order`
 
 **Q: Topics imported in wrong order**
-A: Review page shows order field - adjust before importing
+A: Review page shows the order field - adjust before importing
 
 **Q: Can't select topics to exclude**
 A: Uncheck the checkbox next to topics you don't want
 
 **Q: Missing descriptions**
-A: Add them in the review step before importing
+A: `description` can be left empty in the CSV, or filled in during the review step
 
 ## Summary
 
-The Syllabus Import feature streamlines course setup by automating topic extraction from documents. Users can quickly populate a course with topics while retaining full control through the review and edit process.
+The Syllabus Import feature streamlines course setup by importing topics from a rigid CSV template. Users can quickly populate a course with topics while retaining full control through the review and edit process.
+</content>

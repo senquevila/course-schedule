@@ -34,10 +34,6 @@ htmx_patterns = [
     # Syllabus Import
     path('courses/<int:course_id>/syllabus/upload/', views.SyllabusUploadView.as_view(), name='syllabus-upload'),
     path('courses/<int:course_id>/syllabus/review/', views.SyllabusReviewView.as_view(), name='syllabus-review'),
-
-    # CSV Import
-    path('courses/<int:course_id>/csv/import/', views.CSVImportView.as_view(), name='csv-import'),
-    path('courses/<int:course_id>/csv/review/', views.CSVReviewView.as_view(), name='csv-review'),
 ]
 
 router = SimpleRouter()
