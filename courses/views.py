@@ -6,8 +6,9 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.db.models import Max
 
-from .models import Course, Topic, Material, CourseSchedule
+from .models import Course, Topic, Material
 from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm
+from schedule.models import CourseSchedule
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
 

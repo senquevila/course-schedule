@@ -1,5 +1,6 @@
 from django import forms
-from .models import Topic, Material, CourseSchedule, Course
+from .models import Topic, Material, Course
+from schedule.models import CourseSchedule
 
 
 class TopicForm(forms.ModelForm):
