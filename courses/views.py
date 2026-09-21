@@ -8,9 +8,11 @@ from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
 
+from datetime import timedelta
+
 from .models import Course, Topic, Material, SyllabusDraftTopic
 from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm
-from schedule.models import CourseSchedule
+from schedule.models import CourseSchedule, CourseCalendar
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
 
@@ -501,6 +503,42 @@ class CourseScheduleDeleteView(View):
 
         messages.success(request, f'Schedule deleted successfully.')
         return HttpResponse(status=200)
+
+
+class CourseCalendarGenerateView(View):
+    """(Re)generate CourseCalendar sessions for one schedule, for every matching
+    day between the course's period start and end date."""
+
+    def post(self, request, course_id, schedule_id):
+        course = get_object_or_404(Course, pk=course_id)
+        schedule = get_object_or_404(CourseSchedule, pk=schedule_id, course=course)
+        period = course.period
+
+        # Drop this schedule's sessions that no longer match; keep logged ones as-is.
+        CourseCalendar.objects.filter(
+            course=course,
+            start_time=schedule.start_time,
+            end_time=schedule.end_time,
+            logs__isnull=True,
+        ).delete()
+
+        created_count = 0
+        current = period.start_date
+        while current <= period.end_date:
+            day_of_week = (current.weekday() + 1) % 7  # model: 0=Sunday..6=Saturday
+            if day_of_week in schedule.days:
+                _, created = CourseCalendar.objects.get_or_create(
+                    course=course,
+                    session_date=current,
+                    start_time=schedule.start_time,
+                    defaults={'day_of_week': day_of_week, 'end_time': schedule.end_time},
+                )
+                if created:
+                    created_count += 1
+            current += timedelta(days=1)
+
+        messages.success(request, f'{created_count} calendar session(s) generated.')
+        return redirect('courses:schedule-list', course_id=course.id)
 
 
 # ==================== SYLLABUS IMPORT VIEWS ====================

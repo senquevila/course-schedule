@@ -30,6 +30,7 @@ htmx_patterns = [
     path('courses/<int:course_id>/schedule/create/', views.CourseScheduleCreateView.as_view(), name='schedule-create'),
     path('courses/<int:course_id>/schedule/<int:schedule_id>/edit/', views.CourseScheduleUpdateView.as_view(), name='schedule-edit'),
     path('courses/<int:course_id>/schedule/<int:schedule_id>/delete/', views.CourseScheduleDeleteView.as_view(), name='schedule-delete'),
+    path('courses/<int:course_id>/schedule/<int:schedule_id>/generate-calendar/', views.CourseCalendarGenerateView.as_view(), name='schedule-generate-calendar'),
 
     # Syllabus Import
     path('courses/<int:course_id>/syllabus/upload/', views.SyllabusUploadView.as_view(), name='syllabus-upload'),

@@ -13,6 +13,13 @@
     </td>
     <td>
         <div class="actions">
+            <form method="post" action="{% url 'courses:schedule-generate-calendar' schedule.course.id schedule.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="action-btn"
+                        onclick="return confirm('Generate calendar sessions for this schedule?');">
+                    Generate Calendar
+                </button>
+            </form>
             <button class="action-btn action-edit"
                     hx-get="{% url 'courses:schedule-edit' schedule.course.id schedule.id %}"
                     hx-target="#modal-body"
