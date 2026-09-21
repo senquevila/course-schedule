@@ -1,5 +1,4 @@
-<tr id="topic-{{ topic.id }}"
-    hx-confirm="Are you sure you want to delete this topic?">
+<tr id="topic-{{ topic.id }}">
     <td>{{ topic.code }}</td>
     <td>{{ topic.name }}</td>
     <td>{{ topic.order }}</td>
@@ -24,7 +23,8 @@
             <button class="action-btn action-delete"
                     hx-delete="{% url 'courses:topic-delete' topic.course.id topic.id %}"
                     hx-target="#topic-{{ topic.id }}"
-                    hx-swap="outerHTML swap:1s">
+                    hx-swap="outerHTML swap:1s"
+                    hx-confirm="Are you sure you want to delete this topic?">
                 Delete
             </button>
         </div>

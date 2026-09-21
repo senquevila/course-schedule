@@ -32,8 +32,8 @@ class CourseSchedule(models.Model):
         return ', '.join([day_names[d] for d in sorted(self.days)])
 
 
-class CourseSession(models.Model):
-    """Represents a specific course session instance on a particular date"""
+class CourseCalendar(models.Model):
+    """Represents the original scheduled date/time for a course topic"""
     course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='sessions')
     session_date = models.DateField()
     day_of_week = models.IntegerField()
@@ -45,8 +45,8 @@ class CourseSession(models.Model):
     class Meta:
         db_table = 'courses_coursesession'
         ordering = ['session_date', 'start_time']
-        verbose_name = 'Course Session'
-        verbose_name_plural = 'Course Sessions'
+        verbose_name = 'Course Calendar'
+        verbose_name_plural = 'Course Calendars'
         unique_together = ['course', 'session_date', 'start_time']
         indexes = [
             models.Index(fields=['session_date']),
@@ -56,3 +56,22 @@ class CourseSession(models.Model):
     def __str__(self):
         topic_name = self.topic.name if self.topic else 'Unassigned'
         return f"{self.course.name} - {self.session_date} {self.start_time} ({topic_name})"
+
+
+class CourseCalendarLog(models.Model):
+    """Records what actually happened for one or more scheduled CourseCalendar entries (delay, merge, etc.)"""
+    calendar_entries = models.ManyToManyField(CourseCalendar, related_name='logs')
+    actual_date = models.DateField(null=True, blank=True, help_text="Leave blank if it happened as scheduled")
+    actual_start_time = models.TimeField(null=True, blank=True)
+    actual_end_time = models.TimeField(null=True, blank=True)
+    description = models.TextField(blank=True, help_text="What happened: delay reason, merge details, etc.")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'schedule_coursecalendarlog'
+        ordering = ['-created_at']
+        verbose_name = 'Course Calendar Log'
+        verbose_name_plural = 'Course Calendar Logs'
+
+    def __str__(self):
+        return f"Log #{self.pk} ({self.actual_date or 'as scheduled'})"

@@ -1,5 +1,4 @@
-<tr id="material-{{ material.id }}"
-    hx-confirm="Are you sure you want to delete this material?">
+<tr id="material-{{ material.id }}">
     <td>{{ material.code }}</td>
     <td>{{ material.name }}</td>
     <td>
@@ -27,7 +26,8 @@
             <button class="action-btn action-delete"
                     hx-delete="{% url 'courses:material-delete' material.topic.course.id material.topic.id material.id %}"
                     hx-target="#material-{{ material.id }}"
-                    hx-swap="outerHTML swap:1s">
+                    hx-swap="outerHTML swap:1s"
+                    hx-confirm="Are you sure you want to delete this material?">
                 Delete
             </button>
         </div>
