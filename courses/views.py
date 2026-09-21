@@ -4,10 +4,11 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, T
 from django.http import HttpResponse
 from django.contrib import messages
 from django.urls import reverse_lazy
+from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
 
-from .models import Course, Topic, Material
+from .models import Course, Topic, Material, SyllabusDraftTopic
 from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm
 from schedule.models import CourseSchedule
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
@@ -34,14 +35,17 @@ class HomeView(TemplateView):
 
 
 class CourseListView(ListView):
-    """Display all courses"""
+    """Display only courses whose period is currently active"""
     model = Course
     template_name = 'courses/course_list.html'
     context_object_name = 'courses'
     paginate_by = 20
 
     def get_queryset(self):
-        return Course.objects.all().order_by('-created_at')
+        today = timezone.now().date()
+        return Course.objects.filter(
+            period__start_date__lte=today, period__end_date__gte=today
+        ).order_by('-created_at')
 
 
 # ==================== TOPIC VIEWS ====================
@@ -541,9 +545,11 @@ class SyllabusUploadView(View):
                         }
                     )
 
-                # Store extracted topics in session for next step
-                request.session['extracted_topics'] = extracted_topics
-                request.session['course_id'] = course_id
+                SyllabusDraftTopic.objects.filter(course=course).delete()
+                SyllabusDraftTopic.objects.bulk_create([
+                    SyllabusDraftTopic(course=course, **topic)
+                    for topic in extracted_topics
+                ])
 
                 # Redirect to review page
                 return redirect('courses:syllabus-review', course_id=course_id)
@@ -589,14 +595,14 @@ class SyllabusReviewView(View):
         """Display topic review form"""
         course = get_object_or_404(Course, pk=course_id)
 
-        # Get extracted topics from session
-        extracted_topics = request.session.get('extracted_topics', [])
+        # Get extracted topics from the draft table
+        draft_topics = list(SyllabusDraftTopic.objects.filter(course=course))
 
-        if not extracted_topics:
-            messages.error(request, 'No topics in session. Please upload a syllabus file.')
+        if not draft_topics:
+            messages.error(request, 'No draft topics found. Please upload a syllabus file.')
             return redirect('courses:syllabus-upload', course_id=course_id)
 
-        form = TopicReviewForm(extracted_topics)
+        form = TopicReviewForm(draft_topics)
 
         return render(
             request,
@@ -604,7 +610,7 @@ class SyllabusReviewView(View):
             {
                 'course': course,
                 'form': form,
-                'topic_count': len(extracted_topics),
+                'topic_count': len(draft_topics),
             }
         )
 
@@ -612,14 +618,14 @@ class SyllabusReviewView(View):
         """Import reviewed topics into course"""
         course = get_object_or_404(Course, pk=course_id)
 
-        # Get extracted topics from session
-        extracted_topics = request.session.get('extracted_topics', [])
+        # Get extracted topics from the draft table
+        draft_topics = list(SyllabusDraftTopic.objects.filter(course=course))
 
-        if not extracted_topics:
-            messages.error(request, 'No topics in session.')
+        if not draft_topics:
+            messages.error(request, 'No draft topics found.')
             return redirect('courses:syllabus-upload', course_id=course_id)
 
-        form = TopicReviewForm(extracted_topics, request.POST)
+        form = TopicReviewForm(draft_topics, request.POST)
 
         if form.is_valid():
             reviewed_topics = form.get_reviewed_topics()
@@ -628,24 +634,37 @@ class SyllabusReviewView(View):
                 messages.warning(request, 'No topics selected for import.')
                 return redirect('courses:syllabus-review', course_id=course_id)
 
-            # Create topics
-            created_count = 0
-            try:
-                for topic_data in reviewed_topics:
-                    Topic.objects.create(
-                        course=course,
+            # Save the reviewer's edits back onto the draft rows, so they survive
+            # a failed import (see except blocks below) instead of reverting to the raw CSV values
+            SyllabusDraftTopic.objects.bulk_update(
+                [
+                    SyllabusDraftTopic(
+                        pk=topic_data['draft_id'],
                         code=topic_data['code'],
                         name=topic_data['name'],
                         description=topic_data['description'],
-                        order=topic_data['order']
+                        order=topic_data['order'],
                     )
-                    created_count += 1
+                    for topic_data in reviewed_topics
+                ],
+                ['code', 'name', 'description', 'order']
+            )
 
-                # Clear session
-                if 'extracted_topics' in request.session:
-                    del request.session['extracted_topics']
-                if 'course_id' in request.session:
-                    del request.session['course_id']
+            # Create topics (all-or-nothing so a duplicate order doesn't leave a partial import)
+            try:
+                with transaction.atomic():
+                    for topic_data in reviewed_topics:
+                        Topic.objects.create(
+                            course=course,
+                            code=topic_data['code'],
+                            name=topic_data['name'],
+                            description=topic_data['description'],
+                            order=topic_data['order']
+                        )
+                created_count = len(reviewed_topics)
+
+                # Review is one-shot: drop the drafts now that they're either imported or skipped
+                SyllabusDraftTopic.objects.filter(course=course).delete()
 
                 messages.success(
                     request,
@@ -654,6 +673,20 @@ class SyllabusReviewView(View):
 
                 return redirect('courses:topic-list', course_id=course_id)
 
+            except IntegrityError as e:
+                messages.error(
+                    request,
+                    f'Import cancelled, no topics were saved: a topic with that order already exists ({e})'
+                )
+                return render(
+                    request,
+                    'courses/syllabus_review.html',
+                    {
+                        'course': course,
+                        'form': form,
+                        'topic_count': len(draft_topics),
+                    }
+                )
             except Exception as e:
                 messages.error(request, f'Error creating topics: {str(e)}')
                 return render(
@@ -662,7 +695,7 @@ class SyllabusReviewView(View):
                     {
                         'course': course,
                         'form': form,
-                        'topic_count': len(extracted_topics),
+                        'topic_count': len(draft_topics),
                     }
                 )
         else:
@@ -672,6 +705,16 @@ class SyllabusReviewView(View):
                 {
                     'course': course,
                     'form': form,
-                    'topic_count': len(extracted_topics),
+                    'topic_count': len(draft_topics),
                 }
             )
+
+
+class SyllabusReviewCancelView(View):
+    """Discard the pending syllabus draft without importing it"""
+
+    def post(self, request, course_id):
+        course = get_object_or_404(Course, pk=course_id)
+        SyllabusDraftTopic.objects.filter(course=course).delete()
+        messages.info(request, 'Syllabus import cancelled.')
+        return redirect('courses:topic-list', course_id=course_id)

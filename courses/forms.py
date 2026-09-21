@@ -156,13 +156,14 @@ class SyllabusUploadForm(forms.Form):
 class TopicReviewForm(forms.Form):
     """Form for reviewing and editing extracted topics before saving"""
 
-    def __init__(self, topics_data, *args, **kwargs):
+    def __init__(self, draft_topics, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Dynamically create fields for each topic
-        for i, topic in enumerate(topics_data):
+        # Dynamically create fields for each draft topic, keyed by its DB id
+        for draft in draft_topics:
+            i = draft.pk
             self.fields[f'topic_{i}_code'] = forms.CharField(
-                initial=topic.get('code', ''),
+                initial=draft.code,
                 widget=forms.TextInput(attrs={
                     'class': 'form-input',
                     'placeholder': 'T01',
@@ -172,7 +173,7 @@ class TopicReviewForm(forms.Form):
             )
 
             self.fields[f'topic_{i}_name'] = forms.CharField(
-                initial=topic.get('name', ''),
+                initial=draft.name,
                 widget=forms.TextInput(attrs={
                     'class': 'form-input',
                     'placeholder': 'Topic name'
@@ -181,7 +182,7 @@ class TopicReviewForm(forms.Form):
             )
 
             self.fields[f'topic_{i}_description'] = forms.CharField(
-                initial=topic.get('description', ''),
+                initial=draft.description,
                 widget=forms.Textarea(attrs={
                     'class': 'form-textarea',
                     'rows': 2,
@@ -192,7 +193,7 @@ class TopicReviewForm(forms.Form):
             )
 
             self.fields[f'topic_{i}_order'] = forms.IntegerField(
-                initial=topic.get('order', i + 1),
+                initial=draft.order,
                 widget=forms.NumberInput(attrs={
                     'class': 'form-input',
                     'size': '5'
@@ -210,25 +211,26 @@ class TopicReviewForm(forms.Form):
             )
 
     def get_reviewed_topics(self):
-        """Extract reviewed and cleaned topics from form data"""
+        """Extract reviewed and cleaned topics from form data, keyed by draft id"""
         topics = []
 
         for key, value in self.cleaned_data.items():
             if key.startswith('topic_') and key.endswith('_code'):
-                # Extract topic index
+                # Extract draft id
                 parts = key.split('_')
-                topic_idx = int(parts[1])
+                draft_id = int(parts[1])
 
                 # Check if topic should be included
-                include_key = f'topic_{topic_idx}_include'
+                include_key = f'topic_{draft_id}_include'
                 if not self.cleaned_data.get(include_key, False):
                     continue
 
                 topics.append({
-                    'code': self.cleaned_data.get(f'topic_{topic_idx}_code', ''),
-                    'name': self.cleaned_data.get(f'topic_{topic_idx}_name', ''),
-                    'description': self.cleaned_data.get(f'topic_{topic_idx}_description', ''),
-                    'order': self.cleaned_data.get(f'topic_{topic_idx}_order', topic_idx + 1),
+                    'draft_id': draft_id,
+                    'code': self.cleaned_data.get(f'topic_{draft_id}_code', ''),
+                    'name': self.cleaned_data.get(f'topic_{draft_id}_name', ''),
+                    'description': self.cleaned_data.get(f'topic_{draft_id}_description', ''),
+                    'order': self.cleaned_data.get(f'topic_{draft_id}_order', draft_id),
                 })
 
         # Sort by order

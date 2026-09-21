@@ -29,39 +29,51 @@
             {% for key, field in form.fields.items %}
                 {% if key|is_code_field %}
                     {% with topic_idx=key|slice:"6:-5" %}
+                    {% with code_field=form|get_field:key name_key="topic_"|add:topic_idx|add:"_name" description_key="topic_"|add:topic_idx|add:"_description" order_key="topic_"|add:topic_idx|add:"_order" include_key="topic_"|add:topic_idx|add:"_include" %}
+                    {% with name_field=form|get_field:name_key description_field=form|get_field:description_key order_field=form|get_field:order_key include_field=form|get_field:include_key %}
                     <div class="topic-card">
                         <div class="topic-checkbox">
-                            {{ form|add:"topic_"|add:topic_idx|add:"_include" }}
+                            {{ include_field }}
                         </div>
 
                         <div class="topic-fields">
                             <div class="field-group">
-                                <label>{{ form|add:"topic_"|add:topic_idx|add:"_code" }}</label>
+                                <label>Code</label>
                                 <div class="input-row">
-                                    {{ form|add:"topic_"|add:topic_idx|add:"_code" }}
-                                    <small class="field-label">Code</small>
+                                    {{ code_field }}
                                 </div>
+                                {% if code_field.errors %}
+                                    <div class="form-error">{{ code_field.errors|first }}</div>
+                                {% endif %}
                             </div>
 
                             <div class="field-group">
                                 <label>Name *</label>
-                                {{ form|add:"topic_"|add:topic_idx|add:"_name" }}
-                                {% if form|add:"topic_"|add:topic_idx|add:"_name"|field_errors %}
-                                    <div class="form-error">{{ form|add:"topic_"|add:topic_idx|add:"_name"|field_errors|first }}</div>
+                                {{ name_field }}
+                                {% if name_field.errors %}
+                                    <div class="form-error">{{ name_field.errors|first }}</div>
                                 {% endif %}
                             </div>
 
                             <div class="field-group">
                                 <label>Description</label>
-                                {{ form|add:"topic_"|add:topic_idx|add:"_description" }}
+                                {{ description_field }}
+                                {% if description_field.errors %}
+                                    <div class="form-error">{{ description_field.errors|first }}</div>
+                                {% endif %}
                             </div>
 
                             <div class="field-group">
                                 <label>Order</label>
-                                {{ form|add:"topic_"|add:topic_idx|add:"_order" }}
+                                {{ order_field }}
+                                {% if order_field.errors %}
+                                    <div class="form-error">{{ order_field.errors|first }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
+                    {% endwith %}
+                    {% endwith %}
                     {% endwith %}
                 {% endif %}
             {% endfor %}
@@ -78,7 +90,7 @@
                 <span class="htmx-indicator">...</span>
                 Import Selected Topics
             </button>
-            <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" formaction="{% url 'courses:syllabus-cancel' course.id %}" formnovalidate class="btn btn-secondary">Cancel</button>
         </div>
     </form>
 </div>

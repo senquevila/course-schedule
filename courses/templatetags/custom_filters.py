@@ -5,25 +5,17 @@ register = template.Library()
 
 @register.filter
 def add(value, arg):
-    """
-    Allows adding a value to another value.
-    Used for dictionary-like access in templates.
-
-    Usage: form|add:"field_name"
-    """
-    try:
-        return value[str(arg)]
-    except (KeyError, TypeError, AttributeError):
-        return ''
+    """Concatenate two strings. Usage: "topic_"|add:idx|add:"_code" """
+    return f'{value}{arg}'
 
 
 @register.filter
-def field_errors(field):
-    """Get errors from a form field"""
+def get_field(form, name):
+    """Look up a bound field on a form by its constructed name"""
     try:
-        return field.errors
-    except:
-        return []
+        return form[name]
+    except KeyError:
+        return ''
 
 
 @register.filter

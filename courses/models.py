@@ -71,6 +71,24 @@ class Topic(models.Model):
         return f"{self.code} - {self.name}"
 
 
+class SyllabusDraftTopic(models.Model):
+    """Holds topics extracted from a syllabus upload until they're reviewed and imported"""
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='syllabus_drafts')
+    code = models.CharField(max_length=50)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    order = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order']
+        verbose_name = 'Syllabus Draft Topic'
+        verbose_name_plural = 'Syllabus Draft Topics'
+
+    def __str__(self):
+        return f"{self.code} - {self.name} (draft)"
+
+
 class Material(models.Model):
     """Represents teaching materials attached to a topic"""
     MATERIAL_TYPES = [
