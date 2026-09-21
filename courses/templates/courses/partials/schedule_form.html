@@ -7,7 +7,14 @@
       hx-post="{% if is_create %}{% url 'courses:schedule-create' course.id %}{% else %}{% url 'courses:schedule-edit' course.id schedule.id %}{% endif %}"
       hx-target="{% if is_create %}#schedules-table{% else %}#schedule-{{ schedule.id }}{% endif %}"
       hx-swap="{% if is_create %}beforeend{% else %}outerHTML{% endif %}"
-      hx-on::after-request="if(event.detail.xhr.status === 200 || event.detail.xhr.status === 201) { closeModal(); }">
+      hx-on::after-request="if(event.detail.xhr.status === 200 || event.detail.xhr.status === 201) {
+          closeModal();
+          {% if is_create %}
+          document.querySelector('#schedules-table').closest('table').style.display = '';
+          var msg = document.getElementById('no-schedules-message');
+          if (msg) msg.remove();
+          {% endif %}
+      }">
     {% csrf_token %}
 
     <div class="form-group">
@@ -54,3 +61,14 @@
         </button>
     </div>
 </form>
+
+<script>
+    document.getElementById('{{ form.start_time.id_for_label }}').addEventListener('change', function () {
+        var endInput = document.getElementById('{{ form.end_time.id_for_label }}');
+        if (!this.value) return;
+        var [hours, minutes] = this.value.split(':').map(Number);
+        var end = new Date(0, 0, 0, hours + 1, minutes);
+        endInput.value = end.toTimeString().slice(0, 5);
+    });
+</script>
+

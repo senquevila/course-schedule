@@ -1,4 +1,7 @@
+from datetime import datetime, time as time_cls
+
 from django import forms
+from django.conf import settings
 from .models import Topic, Material, Course
 from schedule.models import CourseSchedule
 
@@ -86,19 +89,24 @@ class CourseScheduleForm(forms.Form):
         help_text='Select all days this schedule applies to'
     )
 
-    start_time = forms.TimeField(
-        widget=forms.TimeInput(attrs={
-            'class': 'form-input',
-            'type': 'time',
+    HOUR_CHOICES = [
+        (f'{h:02d}:00', time_cls(h, 0).strftime('%I:%M %p').lstrip('0'))
+        for h in range(settings.MIN_VALID_HOUR, settings.MAX_VALID_HOUR + 1)
+    ]
+
+    start_time = forms.ChoiceField(
+        choices=HOUR_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'form-select',
             'required': True
         }),
         label='Start Time'
     )
 
-    end_time = forms.TimeField(
-        widget=forms.TimeInput(attrs={
-            'class': 'form-input',
-            'type': 'time',
+    end_time = forms.ChoiceField(
+        choices=HOUR_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'form-select',
             'required': True
         }),
         label='End Time'
@@ -106,9 +114,15 @@ class CourseScheduleForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
+        days = cleaned_data.get('days')
+
+        if cleaned_data.get('start_time'):
+            cleaned_data['start_time'] = datetime.strptime(cleaned_data['start_time'], '%H:%M').time()
+        if cleaned_data.get('end_time'):
+            cleaned_data['end_time'] = datetime.strptime(cleaned_data['end_time'], '%H:%M').time()
+
         start_time = cleaned_data.get('start_time')
         end_time = cleaned_data.get('end_time')
-        days = cleaned_data.get('days')
 
         if start_time and end_time:
             if start_time >= end_time:

@@ -131,6 +131,10 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
+# Valid hour range for course schedules (24-hour clock)
+MIN_VALID_HOUR = 6   # 6am
+MAX_VALID_HOUR = 21  # 9pm
+
 UNFOLD = {
     "SITE_TITLE": "My Admin",
     "SITE_HEADER": "Course Programming",

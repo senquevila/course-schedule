@@ -1,7 +1,6 @@
 {% load static %}
 
-<tr id="schedule-{{ schedule.id }}"
-    hx-confirm="Are you sure you want to delete this schedule?">
+<tr id="schedule-{{ schedule.id }}">
     <td>
         <span title="{{ schedule.get_days_display }}">
             {{ schedule.get_days_short }}
@@ -23,7 +22,8 @@
             <button class="action-btn action-delete"
                     hx-delete="{% url 'courses:schedule-delete' schedule.course.id schedule.id %}"
                     hx-target="#schedule-{{ schedule.id }}"
-                    hx-swap="outerHTML swap:1s">
+                    hx-swap="outerHTML swap:1s"
+                    hx-confirm="Are you sure you want to delete this schedule?">
                 Delete
             </button>
         </div>

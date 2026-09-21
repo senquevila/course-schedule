@@ -343,7 +343,7 @@ class CourseScheduleListView(ListView):
         course_id = self.kwargs['course_id']
         return CourseSchedule.objects.filter(
             course_id=course_id
-        ).order_by('day_of_week', 'start_time')
+        ).order_by('start_time')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -437,8 +437,8 @@ class CourseScheduleUpdateView(View):
         # Initialize form with current schedule data
         form = CourseScheduleForm(initial={
             'days': [str(d) for d in schedule.days],
-            'start_time': schedule.start_time,
-            'end_time': schedule.end_time,
+            'start_time': schedule.start_time.strftime('%H:%M'),
+            'end_time': schedule.end_time.strftime('%H:%M'),
         })
 
         return render(
