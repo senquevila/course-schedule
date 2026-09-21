@@ -5,6 +5,7 @@ from django.http import HttpResponse
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.db.models import Max
+from django.utils import timezone
 
 from .models import Course, Topic, Material
 from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm
@@ -20,11 +21,15 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['courses'] = Course.objects.all().count()
-        context['topics'] = Topic.objects.all().count()
-        context['materials'] = Material.objects.all().count()
-        context['schedules'] = CourseSchedule.objects.all().count()
-        context['recent_courses'] = Course.objects.all().order_by('-created_at')[:5]
+        today = timezone.now().date()
+        active_courses = Course.objects.filter(
+            period__start_date__lte=today, period__end_date__gte=today
+        )
+        context['courses'] = active_courses.count()
+        context['topics'] = Topic.objects.filter(course__in=active_courses).count()
+        context['materials'] = Material.objects.filter(topic__course__in=active_courses).count()
+        context['schedules'] = CourseSchedule.objects.filter(course__in=active_courses).count()
+        context['recent_courses'] = active_courses.order_by('-created_at')[:5]
         return context
 
 

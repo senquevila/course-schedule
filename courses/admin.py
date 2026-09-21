@@ -23,7 +23,7 @@ class CourseAdmin(admin.ModelAdmin):
     list_display = ('name', 'assignature', 'period', 'instructor_name', 'location', 'created_at')
     list_filter = ('period', 'assignature')
     search_fields = ('name', 'instructor_name', 'location')
-    raw_id_fields = ('assignature', 'period')
+    autocomplete_fields = ('assignature', 'period')
     ordering = ('-created_at',)
 
 
@@ -32,7 +32,7 @@ class TopicAdmin(admin.ModelAdmin):
     list_display = ('code', 'name', 'course', 'order', 'created_at')
     list_filter = ('course',)
     search_fields = ('code', 'name')
-    raw_id_fields = ('course',)
+    autocomplete_fields = ('course',)
     ordering = ('course', 'order')
 
 
@@ -41,5 +41,5 @@ class MaterialAdmin(admin.ModelAdmin):
     list_display = ('code', 'name', 'material_type', 'topic', 'created_at')
     list_filter = ('material_type', 'topic')
     search_fields = ('code', 'name')
-    raw_id_fields = ('topic',)
+    autocomplete_fields = ('topic',)
     ordering = ('topic', 'code')
