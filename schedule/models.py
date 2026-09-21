@@ -58,6 +58,21 @@ class CourseCalendar(models.Model):
         return f"{self.course.name} - {self.session_date} {self.start_time} ({topic_name})"
 
 
+class NonWorkingDay(models.Model):
+    """A date on which no sessions should be scheduled (holiday, vacation, etc.)"""
+    date = models.DateField(unique=True)
+    reason = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = 'schedule_nonworkingday'
+        ordering = ['date']
+        verbose_name = 'Non-Working Day'
+        verbose_name_plural = 'Non-Working Days'
+
+    def __str__(self):
+        return f"{self.date}" + (f" ({self.reason})" if self.reason else "")
+
+
 class CourseCalendarLog(models.Model):
     """Records what actually happened for one or more scheduled CourseCalendar entries (delay, merge, etc.)"""
     calendar_entries = models.ManyToManyField(CourseCalendar, related_name='logs')

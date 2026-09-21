@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CourseSchedule, CourseCalendar, CourseCalendarLog
+from .models import CourseSchedule, CourseCalendar, CourseCalendarLog, NonWorkingDay
 
 
 @admin.register(CourseSchedule)
@@ -19,6 +19,13 @@ class CourseCalendarAdmin(admin.ModelAdmin):
     autocomplete_fields = ('course', 'topic')
     ordering = ('-session_date', 'start_time')
     readonly_fields = ('created_at',)
+
+
+@admin.register(NonWorkingDay)
+class NonWorkingDayAdmin(admin.ModelAdmin):
+    list_display = ('date', 'reason')
+    list_filter = ('date',)
+    ordering = ('date',)
 
 
 @admin.register(CourseCalendarLog)
