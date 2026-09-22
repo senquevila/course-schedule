@@ -1,0 +1,53 @@
+{% load static %}
+
+<div id="calendar-grid"
+     class="calendar-fade"
+     x-data="{ show: false }"
+     x-init="requestAnimationFrame(() => show = true)"
+     :class="{ 'calendar-fade-hidden': !show }">
+
+    <div class="calendar-nav">
+        <a class="btn btn-secondary btn-sm"
+           href="?year={{ prev_year }}&month={{ prev_month }}"
+           hx-get="{% url 'courses:calendar-list' course.id %}?year={{ prev_year }}&month={{ prev_month }}"
+           hx-target="#calendar-grid"
+           hx-swap="outerHTML"
+           hx-push-url="true">← Prev</a>
+        <h2>{{ month_name }}</h2>
+        <a class="btn btn-secondary btn-sm"
+           href="?year={{ next_year }}&month={{ next_month }}"
+           hx-get="{% url 'courses:calendar-list' course.id %}?year={{ next_year }}&month={{ next_month }}"
+           hx-target="#calendar-grid"
+           hx-swap="outerHTML"
+           hx-push-url="true">Next →</a>
+    </div>
+
+    <table class="calendar-grid">
+        <thead>
+            <tr>
+                {% for name in weekday_names %}
+                <th>{{ name }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in weeks %}
+            <tr>
+                {% for day, day_sessions in week %}
+                <td class="calendar-day{% if day == 0 %} calendar-day-empty{% endif %}{% if day == today.day and current_month == today.month and current_year == today.year %} calendar-day-today{% endif %}">
+                    {% if day != 0 %}
+                    <div class="calendar-day-number">{{ day }}</div>
+                    {% for session in day_sessions %}
+                    <div class="calendar-session">
+                        <span class="calendar-session-time">{{ session.start_time|time:"H:i" }}</span>
+                        <span class="calendar-session-topic">{{ session.topic.name|default:"Unassigned" }}</span>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

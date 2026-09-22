@@ -49,22 +49,6 @@
             <span class="menu-action">Go →</span>
         </a>
 
-        <!-- Topics -->
-        <div class="menu-card menu-card-info">
-            <div class="menu-icon">📖</div>
-            <h3>Topics</h3>
-            <p>Manage course topics and materials</p>
-            <small class="text-muted">Select a course first</small>
-        </div>
-
-        <!-- Schedule -->
-        <div class="menu-card menu-card-warning">
-            <div class="menu-icon">📅</div>
-            <h3>Schedule</h3>
-            <p>Set up recurring course schedules</p>
-            <small class="text-muted">Select a course first</small>
-        </div>
-
         <!-- Quick Actions -->
         <div class="menu-card menu-card-success">
             <div class="menu-icon">⚡</div>
@@ -94,6 +78,7 @@
             <div class="course-footer">
                 <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-sm btn-primary">Topics</a>
                 <a href="{% url 'courses:schedule-list' course.id %}" class="btn btn-sm btn-secondary">Schedule</a>
+                <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-sm btn-secondary">Calendar</a>
             </div>
         </div>
         {% endfor %}

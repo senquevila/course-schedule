@@ -8,11 +8,12 @@ from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
 
-from datetime import timedelta
+import calendar
+from datetime import date, timedelta
 
 from .models import Course, Topic, Material, SyllabusDraftTopic
 from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm
-from schedule.models import CourseSchedule, CourseCalendar
+from schedule.models import CourseSchedule, CourseCalendar, NonWorkingDay
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
 
@@ -334,6 +335,54 @@ class MaterialDeleteView(View):
 
 # ==================== COURSE SCHEDULE VIEWS ====================
 
+class CourseCalendarListView(TemplateView):
+    """Display generated calendar sessions for a course as a month grid"""
+    template_name = 'courses/calendar_list.html'
+
+    def get_template_names(self):
+        if self.request.headers.get('HX-Request'):
+            return ['courses/partials/calendar_grid.html']
+        return [self.template_name]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        course = get_object_or_404(Course, pk=self.kwargs['course_id'])
+        today = timezone.now().date()
+        year = int(self.request.GET.get('year', today.year))
+        month = int(self.request.GET.get('month', today.month))
+
+        sessions = CourseCalendar.objects.filter(
+            course=course, session_date__year=year, session_date__month=month
+        ).select_related('topic').order_by('start_time')
+        sessions_by_day = {}
+        for session in sessions:
+            sessions_by_day.setdefault(session.session_date.day, []).append(session)
+
+        cal = calendar.Calendar(firstweekday=6)  # Sunday first, matches day_of_week convention
+        weeks = [
+            [(day, sessions_by_day.get(day, [])) for day in week]
+            for week in cal.monthdayscalendar(year, month)
+        ]
+
+        prev_month = date(year, month, 1) - timedelta(days=1)
+        next_month = date(year, month, 28) + timedelta(days=7)
+
+        context.update({
+            'course': course,
+            'weeks': weeks,
+            'month_name': date(year, month, 1).strftime('%B %Y'),
+            'weekday_names': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            'prev_year': prev_month.year,
+            'prev_month': prev_month.month,
+            'next_year': next_month.year,
+            'next_month': next_month.month,
+            'today': today,
+            'current_year': year,
+            'current_month': month,
+        })
+        return context
+
+
 class CourseScheduleListView(ListView):
     """Display list of all schedules for a course"""
     model = CourseSchedule
@@ -505,6 +554,52 @@ class CourseScheduleDeleteView(View):
         return HttpResponse(status=200)
 
 
+def _generate_calendar_sessions(course, schedule, non_working_days):
+    """Create CourseCalendar sessions for one schedule across the course's period.
+    Returns the number of sessions created."""
+    period = course.period
+
+    # Drop this schedule's sessions that no longer match; keep logged ones as-is.
+    CourseCalendar.objects.filter(
+        course=course,
+        start_time=schedule.start_time,
+        end_time=schedule.end_time,
+        logs__isnull=True,
+    ).delete()
+
+    created_count = 0
+    current = period.start_date
+    while current <= period.end_date:
+        day_of_week = (current.weekday() + 1) % 7  # model: 0=Sunday..6=Saturday
+        if day_of_week in schedule.days and current not in non_working_days:
+            _, created = CourseCalendar.objects.get_or_create(
+                course=course,
+                session_date=current,
+                start_time=schedule.start_time,
+                defaults={'day_of_week': day_of_week, 'end_time': schedule.end_time},
+            )
+            if created:
+                created_count += 1
+        current += timedelta(days=1)
+    return created_count
+
+
+def _assign_topics(course):
+    """Assign topics in order across all of the course's unlogged sessions."""
+    sessions = list(CourseCalendar.objects.filter(
+        course=course, logs__isnull=True
+    ).order_by('session_date', 'start_time'))
+    topics = list(Topic.objects.filter(course=course).order_by('order'))
+    for session, topic in zip(sessions, topics):
+        if session.topic_id != topic.id:
+            session.topic = topic
+            session.save(update_fields=['topic'])
+    for session in sessions[len(topics):]:
+        if session.topic_id is not None:
+            session.topic = None
+            session.save(update_fields=['topic'])
+
+
 class CourseCalendarGenerateView(View):
     """(Re)generate CourseCalendar sessions for one schedule, for every matching
     day between the course's period start and end date."""
@@ -512,33 +607,34 @@ class CourseCalendarGenerateView(View):
     def post(self, request, course_id, schedule_id):
         course = get_object_or_404(Course, pk=course_id)
         schedule = get_object_or_404(CourseSchedule, pk=schedule_id, course=course)
-        period = course.period
+        non_working_days = set(NonWorkingDay.objects.filter(
+            date__range=(course.period.start_date, course.period.end_date)
+        ).values_list('date', flat=True))
 
-        # Drop this schedule's sessions that no longer match; keep logged ones as-is.
-        CourseCalendar.objects.filter(
-            course=course,
-            start_time=schedule.start_time,
-            end_time=schedule.end_time,
-            logs__isnull=True,
-        ).delete()
-
-        created_count = 0
-        current = period.start_date
-        while current <= period.end_date:
-            day_of_week = (current.weekday() + 1) % 7  # model: 0=Sunday..6=Saturday
-            if day_of_week in schedule.days:
-                _, created = CourseCalendar.objects.get_or_create(
-                    course=course,
-                    session_date=current,
-                    start_time=schedule.start_time,
-                    defaults={'day_of_week': day_of_week, 'end_time': schedule.end_time},
-                )
-                if created:
-                    created_count += 1
-            current += timedelta(days=1)
+        created_count = _generate_calendar_sessions(course, schedule, non_working_days)
+        _assign_topics(course)
 
         messages.success(request, f'{created_count} calendar session(s) generated.')
         return redirect('courses:schedule-list', course_id=course.id)
+
+
+class CourseCalendarGenerateAllView(View):
+    """(Re)generate CourseCalendar sessions for every schedule of a course."""
+
+    def post(self, request, course_id):
+        course = get_object_or_404(Course, pk=course_id)
+        non_working_days = set(NonWorkingDay.objects.filter(
+            date__range=(course.period.start_date, course.period.end_date)
+        ).values_list('date', flat=True))
+
+        created_count = sum(
+            _generate_calendar_sessions(course, schedule, non_working_days)
+            for schedule in course.schedules.all()
+        )
+        _assign_topics(course)
+
+        messages.success(request, f'{created_count} calendar session(s) generated.')
+        return redirect('courses:calendar-list', course_id=course.id)
 
 
 # ==================== SYLLABUS IMPORT VIEWS ====================

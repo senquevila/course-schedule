@@ -25,6 +25,10 @@ htmx_patterns = [
     path('courses/<int:course_id>/topics/<int:topic_id>/materials/<int:material_id>/edit/', views.MaterialUpdateView.as_view(), name='material-edit'),
     path('courses/<int:course_id>/topics/<int:topic_id>/materials/<int:material_id>/delete/', views.MaterialDeleteView.as_view(), name='material-delete'),
 
+    # Calendar
+    path('courses/<int:course_id>/calendar/', views.CourseCalendarListView.as_view(), name='calendar-list'),
+    path('courses/<int:course_id>/calendar/generate/', views.CourseCalendarGenerateAllView.as_view(), name='calendar-generate'),
+
     # Course Schedules
     path('courses/<int:course_id>/schedule/', views.CourseScheduleListView.as_view(), name='schedule-list'),
     path('courses/<int:course_id>/schedule/create/', views.CourseScheduleCreateView.as_view(), name='schedule-create'),
