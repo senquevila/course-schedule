@@ -9,7 +9,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 import calendar
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 from .models import Course, Topic, Material, SyllabusDraftTopic
 from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm
@@ -383,6 +383,21 @@ class CourseCalendarListView(TemplateView):
         return context
 
 
+class CourseCalendarSessionDetailView(View):
+    """Return the modal detail for one CourseCalendar session"""
+
+    def get(self, request, course_id, session_id):
+        session = get_object_or_404(
+            CourseCalendar.objects.select_related('topic', 'course'),
+            pk=session_id, course_id=course_id,
+        )
+        return render(
+            request,
+            'courses/partials/calendar_session_detail.html',
+            {'session': session},
+        )
+
+
 class CourseScheduleListView(ListView):
     """Display list of all schedules for a course"""
     model = CourseSchedule
@@ -556,14 +571,16 @@ class CourseScheduleDeleteView(View):
 
 def _generate_calendar_sessions(course, schedule, non_working_days):
     """Create CourseCalendar sessions for one schedule across the course's period.
+    A schedule spanning several hours (e.g. 08:00-12:00) is split into one
+    hourly session per slot, since each hour is its own topic slot.
     Returns the number of sessions created."""
     period = course.period
 
     # Drop this schedule's sessions that no longer match; keep logged ones as-is.
     CourseCalendar.objects.filter(
         course=course,
-        start_time=schedule.start_time,
-        end_time=schedule.end_time,
+        start_time__gte=schedule.start_time,
+        start_time__lt=schedule.end_time,
         logs__isnull=True,
     ).delete()
 
@@ -572,20 +589,22 @@ def _generate_calendar_sessions(course, schedule, non_working_days):
     while current <= period.end_date:
         day_of_week = (current.weekday() + 1) % 7  # model: 0=Sunday..6=Saturday
         if day_of_week in schedule.days and current not in non_working_days:
-            _, created = CourseCalendar.objects.get_or_create(
-                course=course,
-                session_date=current,
-                start_time=schedule.start_time,
-                defaults={'day_of_week': day_of_week, 'end_time': schedule.end_time},
-            )
-            if created:
-                created_count += 1
+            for hour in range(schedule.start_time.hour, schedule.end_time.hour):
+                _, created = CourseCalendar.objects.get_or_create(
+                    course=course,
+                    session_date=current,
+                    start_time=time(hour, 0),
+                    defaults={'day_of_week': day_of_week, 'end_time': time(hour + 1, 0)},
+                )
+                if created:
+                    created_count += 1
         current += timedelta(days=1)
     return created_count
 
 
 def _assign_topics(course):
-    """Assign topics in order across all of the course's unlogged sessions."""
+    """Assign topics in order across all of the course's unlogged sessions,
+    one topic per hourly session slot."""
     sessions = list(CourseCalendar.objects.filter(
         course=course, logs__isnull=True
     ).order_by('session_date', 'start_time'))
