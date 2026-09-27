@@ -57,6 +57,17 @@ class CourseCalendar(models.Model):
         topic_name = self.topic.name if self.topic else 'Unassigned'
         return f"{self.course.name} - {self.session_date} {self.start_time} ({topic_name})"
 
+    @property
+    def log_status(self):
+        """Calendar color: none (gray), ok (green), delayed (red), many (orange)"""
+        logs = list(self.logs.all())  # uses prefetch_related('logs') when present
+        if not logs:
+            return 'none'
+        if len(logs) > 1:
+            return 'many'
+        actual = logs[0].actual_date
+        return 'delayed' if actual and actual > self.session_date else 'ok'
+
 
 class NonWorkingDay(models.Model):
     """A date on which no sessions should be scheduled (holiday, vacation, etc.)"""

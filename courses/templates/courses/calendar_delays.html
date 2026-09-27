@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Delays - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+    <a href="/">Home</a> /
+    <span>{{ course.name }}</span> /
+    <a href="{% url 'courses:calendar-list' course.id %}">Calendar</a> /
+    <span>Delays</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Calendar vs Logs</h1>
+        <p class="page-subtitle">{{ course.name }} — current delay: <strong>{{ current_delay }} day{{ current_delay|pluralize }}</strong>,
+            {{ delayed_count }} delayed session{{ delayed_count|pluralize }}, {{ total_delay }} day{{ total_delay|pluralize }} total</p>
+    </div>
+</div>
+
+{% if rows %}
+<table>
+    <thead>
+        <tr>
+            <th>Scheduled</th>
+            <th>Time</th>
+            <th>Topic</th>
+            <th>Actual</th>
+            <th>Delay (days)</th>
+            <th>Problems</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            <td>{{ row.entry.session_date|date:"D, M j" }}</td>
+            <td>{{ row.entry.start_time|time:"H:i" }}</td>
+            <td>{{ row.entry.topic|default:"—" }}</td>
+            <td>{{ row.actual_date|date:"D, M j" }}</td>
+            <td>{% if row.delay > 0 %}<strong>+{{ row.delay }}</strong>{% else %}{{ row.delay }}{% endif %}</td>
+            <td>{{ row.log.problems|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info"><p>No sessions logged yet.</p></div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-secondary">← Back to Calendar</a>
+</div>
+{% endblock %}

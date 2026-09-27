@@ -42,7 +42,7 @@
                     {% if day != 0 %}
                     <div class="calendar-day-number">{{ day }}</div>
                     {% for session in day_sessions %}
-                    <div class="calendar-session"
+                    <div class="calendar-session calendar-session-{{ session.log_status }}"
                          hx-get="{% url 'courses:calendar-session-detail' course.id session.id %}"
                          hx-target="#modal-body"
                          onclick="openModal()">

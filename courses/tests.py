@@ -416,3 +416,20 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
     def test_delay_onto_off_day_keeps_following_topics(self):
         self.log(12, has_issues='yes', actual_date='2026-09-14')
         self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})
+
+    def test_delays_view(self):
+        self.log(5, has_issues='no')
+        self.log(12, has_issues='yes', actual_date='2026-09-15')
+        response = self.client.get(reverse('courses:calendar-delays', args=[self.course.id]))
+        self.assertEqual([row['delay'] for row in response.context['rows']], [0, 3])
+        self.assertEqual((response.context['current_delay'], response.context['total_delay']), (3, 3))
+
+    def test_log_status_colors(self):
+        from schedule.models import CourseCalendar
+        self.log(5, has_issues='no')
+        self.log(12, has_issues='yes', actual_date='2026-09-15')
+        self.log(19, has_issues='no')
+        extra = CourseCalendarLog.objects.create(actual_date=date(2026, 9, 20))
+        extra.calendar_entries.add(CourseCalendar.objects.get(course=self.course, session_date=date(2026, 9, 19)))
+        statuses = {s.session_date.day: s.log_status for s in CourseCalendar.objects.filter(course=self.course)}
+        self.assertEqual(statuses, {5: 'ok', 12: 'delayed', 19: 'many', 26: 'none'})

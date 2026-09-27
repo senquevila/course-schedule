@@ -28,6 +28,7 @@ htmx_patterns = [
     # Calendar
     path('courses/<int:course_id>/calendar/', views.CourseCalendarListView.as_view(), name='calendar-list'),
     path('courses/<int:course_id>/calendar/generate/', views.CourseCalendarGenerateAllView.as_view(), name='calendar-generate'),
+    path('courses/<int:course_id>/calendar/delays/', views.CourseCalendarDelayView.as_view(), name='calendar-delays'),
     path('courses/<int:course_id>/calendar/<int:session_id>/', views.CourseCalendarSessionDetailView.as_view(), name='calendar-session-detail'),
     path('courses/<int:course_id>/calendar/<int:session_id>/log/', views.CourseCalendarLogCreateView.as_view(), name='calendar-log-create'),
 

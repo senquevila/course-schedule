@@ -13,7 +13,7 @@ from datetime import date, time, timedelta
 
 from .models import Course, Topic, Material, SyllabusDraftTopic
 from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm, CourseCalendarLogForm
-from schedule.models import CourseSchedule, CourseCalendar, NonWorkingDay
+from schedule.models import CourseSchedule, CourseCalendar, CourseCalendarLog, NonWorkingDay
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
 
@@ -353,7 +353,7 @@ class CourseCalendarListView(TemplateView):
 
         sessions = CourseCalendar.objects.filter(
             course=course, session_date__year=year, session_date__month=month
-        ).select_related('topic').order_by('start_time')
+        ).select_related('topic').prefetch_related('logs').order_by('start_time')
         sessions_by_day = {}
         for session in sessions:
             sessions_by_day.setdefault(session.session_date.day, []).append(session)
@@ -443,6 +443,32 @@ class CourseCalendarLogCreateView(View):
         )
         response['HX-Trigger'] = 'calendarChanged'
         return response
+
+
+class CourseCalendarDelayView(TemplateView):
+    """Compare each logged calendar entry's scheduled date against its logged actual date"""
+    template_name = 'courses/calendar_delays.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        course = get_object_or_404(Course, pk=self.kwargs['course_id'])
+        rows = []
+        logs = CourseCalendarLog.objects.filter(calendar_entries__course=course).distinct().prefetch_related('calendar_entries__topic')
+        for log in logs:
+            for entry in log.calendar_entries.all():
+                actual = log.actual_date or entry.session_date
+                rows.append({'entry': entry, 'log': log, 'actual_date': actual,
+                             'delay': (actual - entry.session_date).days})
+        rows.sort(key=lambda row: (row['entry'].session_date, row['entry'].start_time))
+        context.update({
+            'course': course,
+            'rows': rows,
+            'delayed_count': sum(row['delay'] > 0 for row in rows),
+            'total_delay': sum(max(row['delay'], 0) for row in rows),
+            # ponytail: "current" delay = the most recent logged entry's delay
+            'current_delay': rows[-1]['delay'] if rows else 0,
+        })
+        return context
 
 
 class CourseScheduleListView(ListView):
