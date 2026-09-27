@@ -8,14 +8,30 @@
       hx-target="#modal-body">
     {% csrf_token %}
 
+    <div x-data="{ status: '{{ form.has_issues.value|default:'no' }}' }">
+    <div class="form-group">
+        <label>{{ form.has_issues.label }}</label>
+        {% for radio in form.has_issues %}
+        <label class="radio-option">
+            <input type="radio" name="{{ radio.data.name }}" value="{{ radio.data.value }}" x-model="status">
+            {{ radio.choice_label }}
+        </label>
+        {% endfor %}
+    </div>
+
+    <div x-show="status === 'yes'" x-cloak>
     {% for field in form %}
+    {% if field.name != 'has_issues' %}
     <div class="form-group">
         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
         {{ field }}
         {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
         {% if field.errors %}<div class="form-error">{{ field.errors.0 }}</div>{% endif %}
     </div>
+    {% endif %}
     {% endfor %}
+    </div>
+    </div>
 
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary"

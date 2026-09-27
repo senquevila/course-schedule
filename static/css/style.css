@@ -606,3 +606,15 @@ tbody tr:last-child td {
 .text-danger { color: var(--danger-color); }
 .text-success { color: var(--success-color); }
 .text-warning { color: var(--warning-color); }
+
+[x-cloak] {
+    display: none !important;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: normal;
+    cursor: pointer;
+}

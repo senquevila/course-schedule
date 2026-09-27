@@ -422,7 +422,12 @@ class CourseCalendarLogCreateView(View):
         if not form.is_valid():
             return self._render_form(request, session, form)
         with transaction.atomic():
-            log = form.save()
+            log = form.save(commit=False)
+            if form.cleaned_data['has_issues'] == 'no':
+                # Happened as scheduled: record the session's own date, nothing else
+                log.actual_date = session.session_date
+                log.problems = log.solutions = ''
+            log.save()
             log.calendar_entries.add(session)
             if log.actual_date and log.actual_date > session.session_date:
                 # Delayed onto a regular class slot: that slot becomes the makeup for this topic

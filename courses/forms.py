@@ -253,6 +253,12 @@ class TopicReviewForm(forms.Form):
 
 class CourseCalendarLogForm(forms.ModelForm):
     """Form for logging what actually happened in a calendar session"""
+    has_issues = forms.ChoiceField(
+        choices=[('no', 'No problem'), ('yes', 'I have issues')],
+        initial='no',
+        widget=forms.RadioSelect,
+        label='How did it go?',
+    )
 
     class Meta:
         model = CourseCalendarLog

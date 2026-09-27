@@ -5,6 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from datetime import date
 
 from .models import Period, Assignature, Course, Topic
+from schedule.models import CourseCalendarLog
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
 
@@ -403,13 +404,15 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         return response
 
     def test_as_scheduled_log_keeps_calendar(self):
-        self.log(12, problems='Moved')
+        self.log(12, has_issues='no', problems='ignored')
         self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})
+        log = CourseCalendarLog.objects.get()
+        self.assertEqual((log.actual_date, log.problems), (date(2026, 9, 12), ''))
 
     def test_delay_onto_class_day_shifts_following_topics(self):
-        self.log(12, actual_date='2026-09-19')
+        self.log(12, has_issues='yes', actual_date='2026-09-19')
         self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T2', 26: 'T3'})
 
     def test_delay_onto_off_day_keeps_following_topics(self):
-        self.log(12, actual_date='2026-09-14')
+        self.log(12, has_issues='yes', actual_date='2026-09-14')
         self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})
