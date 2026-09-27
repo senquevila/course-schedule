@@ -367,3 +367,49 @@ class TopicCodeGenerationTestCase(TestCase):
 
         expected = ['T01', 'T02', 'T03', 'T04', 'T05']
         self.assertEqual(codes, expected)
+
+
+class CourseCalendarLogCreateViewTestCase(TestCase):
+    """Saving a log re-flows the calendar after the log's date"""
+
+    def setUp(self):
+        from datetime import time
+        from schedule.models import CourseSchedule
+
+        period = Period.objects.create(name='P', start_date=date(2026, 9, 1), end_date=date(2026, 9, 30))
+        assignature = Assignature.objects.create(code='CS101', name='Test Course', uv=4)
+        self.course = Course.objects.create(assignature=assignature, name='S', period=period)
+        CourseSchedule.objects.create(course=self.course, days=[6], start_time=time(8), end_time=time(9))
+        for n in range(1, 5):
+            Topic.objects.create(course=self.course, code=f'T{n}', name=f'T{n}', order=n)
+        # Saturdays 5, 12, 19, 26 -> T1..T4
+        self.client.post(reverse('courses:calendar-generate', args=[self.course.id]))
+
+    def topics_by_day(self):
+        from schedule.models import CourseCalendar
+        return {
+            s.session_date.day: s.topic and s.topic.name
+            for s in CourseCalendar.objects.filter(course=self.course).select_related('topic')
+        }
+
+    def log(self, day, **data):
+        from schedule.models import CourseCalendar
+        session = CourseCalendar.objects.get(course=self.course, session_date=date(2026, 9, day))
+        url = reverse('courses:calendar-log-create', args=[self.course.id, session.id])
+        self.assertEqual(self.client.get(url).status_code, 200)
+        response = self.client.post(url, data)
+        self.assertEqual(response['HX-Trigger'], 'calendarChanged')
+        self.assertEqual(session.logs.count(), 1)
+        return response
+
+    def test_as_scheduled_log_keeps_calendar(self):
+        self.log(12, problems='Moved')
+        self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})
+
+    def test_delay_onto_class_day_shifts_following_topics(self):
+        self.log(12, actual_date='2026-09-19')
+        self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T2', 26: 'T3'})
+
+    def test_delay_onto_off_day_keeps_following_topics(self):
+        self.log(12, actual_date='2026-09-14')
+        self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})

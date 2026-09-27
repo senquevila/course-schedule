@@ -3,7 +3,7 @@ from datetime import datetime, time as time_cls
 from django import forms
 from django.conf import settings
 from .models import Topic, Material, Course
-from schedule.models import CourseSchedule
+from schedule.models import CourseSchedule, CourseCalendarLog
 
 
 class TopicForm(forms.ModelForm):
@@ -249,3 +249,16 @@ class TopicReviewForm(forms.Form):
 
         # Sort by order
         return sorted(topics, key=lambda x: x['order'])
+
+
+class CourseCalendarLogForm(forms.ModelForm):
+    """Form for logging what actually happened in a calendar session"""
+
+    class Meta:
+        model = CourseCalendarLog
+        fields = ['actual_date', 'problems', 'solutions']
+        widgets = {
+            'actual_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'problems': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 2}),
+            'solutions': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 2}),
+        }

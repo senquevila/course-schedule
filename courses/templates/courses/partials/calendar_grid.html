@@ -2,6 +2,10 @@
 
 <div id="calendar-grid"
      class="calendar-fade"
+     hx-get="{% url 'courses:calendar-list' course.id %}?year={{ current_year }}&month={{ current_month }}"
+     hx-trigger="calendarChanged from:body"
+     hx-swap="outerHTML"
+     hx-disinherit="*"
      x-data="{ show: false }"
      x-init="requestAnimationFrame(() => show = true)"
      :class="{ 'calendar-fade-hidden': !show }">

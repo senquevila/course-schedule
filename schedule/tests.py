@@ -55,7 +55,7 @@ class CourseCalendarGenerateViewTestCase(TestCase):
     def test_repeated_generation_preserves_logged_session(self):
         self.generate()
         logged_session = CourseCalendar.objects.get(session_date=date(2026, 1, 5))
-        log = CourseCalendarLog.objects.create(description='Ran late')
+        log = CourseCalendarLog.objects.create(problems='Ran late')
         log.calendar_entries.add(logged_session)
 
         # Mark 2026-01-05 as a non-working day: it should stay untouched because it's logged.

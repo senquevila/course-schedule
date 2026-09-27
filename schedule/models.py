@@ -77,9 +77,8 @@ class CourseCalendarLog(models.Model):
     """Records what actually happened for one or more scheduled CourseCalendar entries (delay, merge, etc.)"""
     calendar_entries = models.ManyToManyField(CourseCalendar, related_name='logs')
     actual_date = models.DateField(null=True, blank=True, help_text="Leave blank if it happened as scheduled")
-    actual_start_time = models.TimeField(null=True, blank=True)
-    actual_end_time = models.TimeField(null=True, blank=True)
-    description = models.TextField(blank=True, help_text="What happened: delay reason, merge details, etc.")
+    problems = models.TextField(blank=True, help_text="Any problems encountered (optional)")
+    solutions = models.TextField(blank=True, help_text="How problems were resolved (optional)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

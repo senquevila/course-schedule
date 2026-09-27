@@ -12,7 +12,7 @@ import calendar
 from datetime import date, time, timedelta
 
 from .models import Course, Topic, Material, SyllabusDraftTopic
-from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm
+from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm, CourseCalendarLogForm
 from schedule.models import CourseSchedule, CourseCalendar, NonWorkingDay
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
@@ -398,6 +398,48 @@ class CourseCalendarSessionDetailView(View):
         )
 
 
+class CourseCalendarLogCreateView(View):
+    """Return/handle the log form for one CourseCalendar session inside the modal"""
+
+    def _render_form(self, request, session, form):
+        # ponytail: 200 on invalid form so htmx 1.9 swaps the errors in without response-targets
+        return render(
+            request,
+            'courses/partials/calendar_log_form.html',
+            {'session': session, 'form': form},
+        )
+
+    def get(self, request, course_id, session_id):
+        session = get_object_or_404(CourseCalendar, pk=session_id, course_id=course_id)
+        return self._render_form(request, session, CourseCalendarLogForm())
+
+    def post(self, request, course_id, session_id):
+        session = get_object_or_404(
+            CourseCalendar.objects.select_related('topic', 'course'),
+            pk=session_id, course_id=course_id,
+        )
+        form = CourseCalendarLogForm(request.POST)
+        if not form.is_valid():
+            return self._render_form(request, session, form)
+        with transaction.atomic():
+            log = form.save()
+            log.calendar_entries.add(session)
+            if log.actual_date and log.actual_date > session.session_date:
+                # Delayed onto a regular class slot: that slot becomes the makeup for this topic
+                CourseCalendar.objects.filter(
+                    course=session.course, session_date=log.actual_date,
+                    start_time=session.start_time, logs__isnull=True,
+                ).update(topic=session.topic)
+            _regenerate_after(session.course, log.actual_date or session.session_date)
+        response = render(
+            request,
+            'courses/partials/calendar_session_detail.html',
+            {'session': session},
+        )
+        response['HX-Trigger'] = 'calendarChanged'
+        return response
+
+
 class CourseScheduleListView(ListView):
     """Display list of all schedules for a course"""
     model = CourseSchedule
@@ -569,23 +611,27 @@ class CourseScheduleDeleteView(View):
         return HttpResponse(status=200)
 
 
-def _generate_calendar_sessions(course, schedule, non_working_days):
+def _generate_calendar_sessions(course, schedule, non_working_days, after=None):
     """Create CourseCalendar sessions for one schedule across the course's period.
     A schedule spanning several hours (e.g. 08:00-12:00) is split into one
     hourly session per slot, since each hour is its own topic slot.
+    With `after`, only dates strictly after it are touched.
     Returns the number of sessions created."""
     period = course.period
 
     # Drop this schedule's sessions that no longer match; keep logged ones as-is.
-    CourseCalendar.objects.filter(
+    stale = CourseCalendar.objects.filter(
         course=course,
         start_time__gte=schedule.start_time,
         start_time__lt=schedule.end_time,
         logs__isnull=True,
-    ).delete()
+    )
+    if after:
+        stale = stale.filter(session_date__gt=after)
+    stale.delete()
 
     created_count = 0
-    current = period.start_date
+    current = max(period.start_date, after + timedelta(days=1)) if after else period.start_date
     while current <= period.end_date:
         day_of_week = (current.weekday() + 1) % 7  # model: 0=Sunday..6=Saturday
         if day_of_week in schedule.days and current not in non_working_days:
@@ -602,13 +648,18 @@ def _generate_calendar_sessions(course, schedule, non_working_days):
     return created_count
 
 
-def _assign_topics(course):
-    """Assign topics in order across all of the course's unlogged sessions,
-    one topic per hourly session slot."""
-    sessions = list(CourseCalendar.objects.filter(
-        course=course, logs__isnull=True
-    ).order_by('session_date', 'start_time'))
-    topics = list(Topic.objects.filter(course=course).order_by('order'))
+def _assign_topics(course, after=None):
+    """Assign topics in order across the course's unlogged sessions (only those
+    dated after `after`, if given), one topic per hourly session slot.
+    Topics already held by the sessions left alone are skipped."""
+    sessions = CourseCalendar.objects.filter(course=course, logs__isnull=True)
+    if after:
+        sessions = sessions.filter(session_date__gt=after)
+    sessions = list(sessions.order_by('session_date', 'start_time'))
+    kept_topic_ids = CourseCalendar.objects.filter(course=course, topic__isnull=False).exclude(
+        pk__in=[session.pk for session in sessions]
+    ).values('topic_id')
+    topics = list(Topic.objects.filter(course=course).exclude(pk__in=kept_topic_ids).order_by('order'))
     for session, topic in zip(sessions, topics):
         if session.topic_id != topic.id:
             session.topic = topic
@@ -617,6 +668,17 @@ def _assign_topics(course):
         if session.topic_id is not None:
             session.topic = None
             session.save(update_fields=['topic'])
+
+
+def _regenerate_after(course, after):
+    """Rebuild every schedule's unlogged sessions after `after` and re-flow the remaining topics onto them."""
+    period = course.period
+    non_working_days = set(NonWorkingDay.objects.filter(
+        date__range=(period.start_date, period.end_date)
+    ).values_list('date', flat=True))
+    for schedule in course.schedules.all():
+        _generate_calendar_sessions(course, schedule, non_working_days, after=after)
+    _assign_topics(course, after=after)
 
 
 class CourseCalendarGenerateView(View):

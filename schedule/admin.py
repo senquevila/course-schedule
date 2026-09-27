@@ -30,7 +30,7 @@ class NonWorkingDayAdmin(admin.ModelAdmin):
 
 @admin.register(CourseCalendarLog)
 class CourseCalendarLogAdmin(admin.ModelAdmin):
-    list_display = ('id', 'actual_date', 'actual_start_time', 'actual_end_time', 'created_at')
+    list_display = ('id', 'actual_date', 'problems', 'solutions', 'created_at')
     list_filter = ('actual_date',)
     autocomplete_fields = ('calendar_entries',)
     readonly_fields = ('created_at',)

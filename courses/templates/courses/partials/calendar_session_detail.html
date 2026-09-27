@@ -30,12 +30,18 @@
     {% for log in logs %}
     <div class="alert alert-info">
         {% if log.actual_date %}<strong>{{ log.actual_date }}</strong>{% endif %}
-        {% if log.actual_start_time %} {{ log.actual_start_time|time:"H:i" }}-{{ log.actual_end_time|time:"H:i" }}{% endif %}
-        {% if log.description %}<p>{{ log.description }}</p>{% endif %}
+        {% if log.problems %}<p><strong>Problems:</strong> {{ log.problems }}</p>{% endif %}
+        {% if log.solutions %}<p><strong>Solutions:</strong> {{ log.solutions }}</p>{% endif %}
     </div>
     {% endfor %}
     {% endif %}
     {% endwith %}
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-primary"
+                hx-get="{% url 'courses:calendar-log-create' session.course_id session.id %}"
+                hx-target="#modal-body">Add Log</button>
+    </div>
 </div>
 
 <style>
