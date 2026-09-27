@@ -32,6 +32,13 @@ class CourseSchedule(models.Model):
         return ', '.join([day_names[d] for d in sorted(self.days)])
 
 
+class LogStatus(models.TextChoices):
+    NONE = 'none', 'No log'
+    OK = 'ok', 'As scheduled'
+    DELAYED = 'delayed', 'Delayed'
+    MANY = 'many', 'Many logs'
+
+
 class CourseCalendar(models.Model):
     """Represents the original scheduled date/time for a course topic"""
     course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='sessions')
@@ -62,11 +69,11 @@ class CourseCalendar(models.Model):
         """Calendar color: none (gray), ok (green), delayed (red), many (orange)"""
         logs = list(self.logs.all())  # uses prefetch_related('logs') when present
         if not logs:
-            return 'none'
+            return LogStatus.NONE
         if len(logs) > 1:
-            return 'many'
+            return LogStatus.MANY
         actual = logs[0].actual_date
-        return 'delayed' if actual and actual > self.session_date else 'ok'
+        return LogStatus.DELAYED if actual and actual > self.session_date else LogStatus.OK
 
 
 class NonWorkingDay(models.Model):

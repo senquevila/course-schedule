@@ -79,6 +79,7 @@
                 <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-sm btn-primary">Topics</a>
                 <a href="{% url 'courses:schedule-list' course.id %}" class="btn btn-sm btn-secondary">Schedule</a>
                 <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-sm btn-secondary">Calendar</a>
+                <a href="{% url 'courses:calendar-log-list' course.id %}" class="btn btn-sm btn-secondary">Logs</a>
             </div>
         </div>
         {% endfor %}

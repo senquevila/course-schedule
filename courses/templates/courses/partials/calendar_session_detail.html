@@ -28,10 +28,10 @@
     {% if logs %}
     <h4 class="mt-3">Logs</h4>
     {% for log in logs %}
-    <div class="alert alert-info">
-        {% if log.actual_date %}<strong>{{ log.actual_date }}</strong>{% endif %}
-        {% if log.problems %}<p><strong>Problems:</strong> {{ log.problems }}</p>{% endif %}
-        {% if log.solutions %}<p><strong>Solutions:</strong> {{ log.solutions }}</p>{% endif %}
+    <div class="alert alert-info" style="display: block;">
+        <div style="font-size: 0.8rem;">{{ log.actual_date|default:session.session_date|date:"Y-m-d" }}</div>
+        <div style="font-size: 0.9rem;"><strong>Problema:</strong> {{ log.problems|default:"—" }}</div>
+        <div style="font-size: 0.9rem;"><strong>Solución:</strong> {{ log.solutions|default:"—" }}</div>
     </div>
     {% endfor %}
     {% endif %}

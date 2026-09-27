@@ -425,11 +425,34 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         self.assertEqual((response.context['current_delay'], response.context['total_delay']), (3, 3))
 
     def test_log_status_colors(self):
-        from schedule.models import CourseCalendar
+        from schedule.models import CourseCalendar, LogStatus
         self.log(5, has_issues='no')
         self.log(12, has_issues='yes', actual_date='2026-09-15')
         self.log(19, has_issues='no')
         extra = CourseCalendarLog.objects.create(actual_date=date(2026, 9, 20))
         extra.calendar_entries.add(CourseCalendar.objects.get(course=self.course, session_date=date(2026, 9, 19)))
         statuses = {s.session_date.day: s.log_status for s in CourseCalendar.objects.filter(course=self.course)}
-        self.assertEqual(statuses, {5: 'ok', 12: 'delayed', 19: 'many', 26: 'none'})
+        self.assertEqual(statuses, {5: LogStatus.OK, 12: LogStatus.DELAYED, 19: LogStatus.MANY, 26: LogStatus.NONE})
+
+    def test_edit_and_delete_log(self):
+        from schedule.models import CourseCalendar
+        self.log(12, has_issues='yes', actual_date='2026-09-19')
+        log = CourseCalendarLog.objects.get()
+        list_url = reverse('courses:calendar-log-list', args=[self.course.id])
+        self.assertEqual(list(self.client.get(list_url).context['logs']), [log])
+
+        edit_url = reverse('courses:calendar-log-edit', args=[self.course.id, log.id])
+        self.assertEqual(self.client.get(edit_url).status_code, 200)
+        response = self.client.post(edit_url, {'has_issues': 'no'})
+        self.assertEqual(response['HX-Refresh'], 'true')
+        log.refresh_from_db()
+        self.assertEqual(log.actual_date, date(2026, 9, 12))
+        self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})
+
+        self.client.post(edit_url, {'has_issues': 'yes', 'actual_date': '2026-09-19'})
+        self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T2', 26: 'T3'})
+
+        self.client.delete(reverse('courses:calendar-log-delete', args=[self.course.id, log.id]))
+        self.assertFalse(CourseCalendarLog.objects.exists())
+        self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})
+        self.assertFalse(CourseCalendar.objects.filter(course=self.course, logs__isnull=False).exists())

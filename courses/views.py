@@ -3,7 +3,7 @@ from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.http import HttpResponse
 from django.contrib import messages
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
@@ -406,7 +406,8 @@ class CourseCalendarLogCreateView(View):
         return render(
             request,
             'courses/partials/calendar_log_form.html',
-            {'session': session, 'form': form},
+            {'session': session, 'form': form,
+             'form_url': reverse('courses:calendar-log-create', args=[session.course_id, session.id])},
         )
 
     def get(self, request, course_id, session_id):
@@ -422,20 +423,7 @@ class CourseCalendarLogCreateView(View):
         if not form.is_valid():
             return self._render_form(request, session, form)
         with transaction.atomic():
-            log = form.save(commit=False)
-            if form.cleaned_data['has_issues'] == 'no':
-                # Happened as scheduled: record the session's own date, nothing else
-                log.actual_date = session.session_date
-                log.problems = log.solutions = ''
-            log.save()
-            log.calendar_entries.add(session)
-            if log.actual_date and log.actual_date > session.session_date:
-                # Delayed onto a regular class slot: that slot becomes the makeup for this topic
-                CourseCalendar.objects.filter(
-                    course=session.course, session_date=log.actual_date,
-                    start_time=session.start_time, logs__isnull=True,
-                ).update(topic=session.topic)
-            _regenerate_after(session.course, log.actual_date or session.session_date)
+            _save_log(form, session)
         response = render(
             request,
             'courses/partials/calendar_session_detail.html',
@@ -443,6 +431,92 @@ class CourseCalendarLogCreateView(View):
         )
         response['HX-Trigger'] = 'calendarChanged'
         return response
+
+
+def _save_log(form, session):
+    """Save a valid CourseCalendarLogForm for `session` and re-flow the calendar after it."""
+    log = form.save(commit=False)
+    if form.cleaned_data['has_issues'] == 'no':
+        # Happened as scheduled: record the session's own date, nothing else
+        log.actual_date = session.session_date
+        log.problems = log.solutions = ''
+    log.save()
+    log.calendar_entries.add(session)
+    if log.actual_date and log.actual_date > session.session_date:
+        # Delayed onto a regular class slot: that slot becomes the makeup for this topic
+        CourseCalendar.objects.filter(
+            course=session.course, session_date=log.actual_date,
+            start_time=session.start_time, logs__isnull=True,
+        ).update(topic=session.topic)
+    _regenerate_after(session.course, log.actual_date or session.session_date)
+    return log
+
+
+def _course_log_or_404(course_id, log_id):
+    """Return (log, its first calendar session) for a log belonging to the course."""
+    log = get_object_or_404(
+        CourseCalendarLog.objects.filter(calendar_entries__course_id=course_id).distinct(), pk=log_id
+    )
+    # ponytail: logs are created for one session; multi-entry logs use their earliest
+    session = log.calendar_entries.select_related('topic', 'course').order_by('session_date', 'start_time').first()
+    return log, session
+
+
+class CourseCalendarLogListView(TemplateView):
+    """List every log of a course with edit/delete actions"""
+    template_name = 'courses/calendar_logs.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        course = get_object_or_404(Course, pk=self.kwargs['course_id'])
+        logs = (CourseCalendarLog.objects.filter(calendar_entries__course=course).distinct()
+                .prefetch_related('calendar_entries__topic'))
+        context.update({
+            'course': course,
+            'logs': sorted(logs, key=lambda log: min(
+                (e.session_date, e.start_time) for e in log.calendar_entries.all())),
+        })
+        return context
+
+
+class CourseCalendarLogUpdateView(View):
+    """Edit a log inside the modal; re-flows the calendar and reloads the page on save"""
+
+    def _render_form(self, request, log, session, form):
+        return render(
+            request,
+            'courses/partials/calendar_log_form.html',
+            {'session': session, 'form': form, 'is_edit': True,
+             'form_url': reverse('courses:calendar-log-edit', args=[session.course_id, log.id])},
+        )
+
+    def get(self, request, course_id, log_id):
+        log, session = _course_log_or_404(course_id, log_id)
+        has_issues = log.actual_date not in (None, session.session_date) or log.problems or log.solutions
+        form = CourseCalendarLogForm(instance=log, initial={'has_issues': 'yes' if has_issues else 'no'})
+        return self._render_form(request, log, session, form)
+
+    def post(self, request, course_id, log_id):
+        log, session = _course_log_or_404(course_id, log_id)
+        form = CourseCalendarLogForm(request.POST, instance=log)
+        if not form.is_valid():
+            return self._render_form(request, log, session, form)
+        with transaction.atomic():
+            # Undo the old delay's effect first, then apply the edited log like a new one
+            _regenerate_after(session.course, session.session_date)
+            _save_log(form, session)
+        return HttpResponse(headers={'HX-Refresh': 'true'})
+
+
+class CourseCalendarLogDeleteView(View):
+    """Delete a log and re-flow the calendar from its session onward"""
+
+    def delete(self, request, course_id, log_id):
+        log, session = _course_log_or_404(course_id, log_id)
+        with transaction.atomic():
+            log.delete()
+            _regenerate_after(session.course, session.session_date - timedelta(days=1))
+        return HttpResponse(status=200)
 
 
 class CourseCalendarDelayView(TemplateView):
