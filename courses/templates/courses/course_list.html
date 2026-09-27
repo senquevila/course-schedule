@@ -20,26 +20,24 @@
     {% for course in courses %}
     <div class="course-card">
         <div class="course-header">
-            <div>
-                <h3>{{ course.name }}</h3>
-                <span class="badge">{{ course.assignature.code }}</span>
-            </div>
+            <h3>{{ course.name }}</h3>
+            <span class="course-code">{{ course.assignature.code }}</span>
         </div>
         <div class="course-body">
             <dl>
-                <dt>Assignature:</dt>
+                <dt>Assignature</dt>
                 <dd>{{ course.assignature.name }}</dd>
 
-                <dt>Period:</dt>
+                <dt>Period</dt>
                 <dd>{{ course.period.name }}</dd>
 
-                <dt>Instructor:</dt>
+                <dt>Instructor</dt>
                 <dd>{{ course.instructor_name|default:"Not assigned" }}</dd>
 
-                <dt>Location:</dt>
+                <dt>Location</dt>
                 <dd>{{ course.location|default:"Not assigned" }}</dd>
 
-                <dt>Weekly Hours:</dt>
+                <dt>Weekly Hours</dt>
                 <dd>{{ course.assignature.uv }} hours</dd>
             </dl>
         </div>
@@ -60,87 +58,4 @@
 <div class="mt-4">
     <a href="/" class="btn btn-secondary">← Back to Home</a>
 </div>
-
-<style>
-    .courses-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 1.5rem;
-        margin-top: 2rem;
-    }
-
-    .course-card {
-        background: white;
-        border-radius: var(--border-radius);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        transition: var(--transition);
-        display: flex;
-        flex-direction: column;
-    }
-
-    .course-card:hover {
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-        transform: translateY(-2px);
-    }
-
-    .course-header {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-        color: white;
-        padding: 1.5rem;
-    }
-
-    .course-header h3 {
-        margin: 0 0 0.5rem 0;
-        font-size: 1.25rem;
-    }
-
-    .course-body {
-        padding: 1.5rem;
-        flex-grow: 1;
-    }
-
-    .course-body dl {
-        margin: 0;
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 0.5rem 1rem;
-    }
-
-    .course-body dt {
-        font-weight: 600;
-        color: var(--gray-700);
-        font-size: 0.875rem;
-    }
-
-    .course-body dd {
-        margin: 0;
-        color: var(--gray-600);
-        font-size: 0.875rem;
-    }
-
-    .course-footer {
-        padding: 1rem 1.5rem;
-        border-top: 1px solid var(--gray-200);
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .badge {
-        display: inline-block;
-        background-color: rgba(255, 255, 255, 0.2);
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        margin-top: 0.5rem;
-    }
-
-    @media (max-width: 768px) {
-        .courses-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
 {% endblock %}

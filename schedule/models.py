@@ -40,14 +40,8 @@ class LogStatus(models.TextChoices):
 
     @property
     def style(self):
-        """Inline CSS (background, text color) used to paint a calendar session"""
-        background, color = {
-            LogStatus.NONE: ('#e5e7eb', '#374151'),
-            LogStatus.OK: ('#dcfce7', '#166534'),
-            LogStatus.DELAYED: ('#fee2e2', '#991b1b'),
-            LogStatus.MANY: ('#ffedd5', '#9a3412'),
-        }[self]
-        return f'background: {background}; color: {color};'
+        """Inline CSS painting a calendar session; the colors are tokens in style.css (light/dark)"""
+        return f'background: var(--status-{self.value}-bg); color: var(--status-{self.value}-fg);'
 
 
 class CourseCalendar(models.Model):

@@ -13,7 +13,7 @@ from datetime import date, time, timedelta
 
 from .models import Course, Topic, Material, SyllabusDraftTopic
 from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm, CourseCalendarLogForm
-from schedule.models import CourseSchedule, CourseCalendar, CourseCalendarLog, NonWorkingDay
+from schedule.models import CourseSchedule, CourseCalendar, CourseCalendarLog, NonWorkingDay, LogStatus
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
 
@@ -379,6 +379,7 @@ class CourseCalendarListView(TemplateView):
             'today': today,
             'current_year': year,
             'current_month': month,
+            'log_statuses': LogStatus,
         })
         return context
 

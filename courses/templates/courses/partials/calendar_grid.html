@@ -26,6 +26,13 @@
            hx-push-url="true">Next →</a>
     </div>
 
+    <ul class="calendar-legend">
+        {% for status in log_statuses %}
+        <li><span style="{{ status.style }}"></span>{{ status.label }}</li>
+        {% endfor %}
+    </ul>
+
+    <div class="calendar-scroll">
     <table class="calendar-grid">
         <thead>
             <tr>
@@ -57,4 +64,5 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>

@@ -433,7 +433,7 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         extra.calendar_entries.add(CourseCalendar.objects.get(course=self.course, session_date=date(2026, 9, 19)))
         statuses = {s.session_date.day: s.log_status for s in CourseCalendar.objects.filter(course=self.course)}
         self.assertEqual(statuses, {5: LogStatus.OK, 12: LogStatus.DELAYED, 19: LogStatus.MANY, 26: LogStatus.NONE})
-        self.assertIn("#fee2e2", statuses[12].style)
+        self.assertIn("--status-delayed-bg", statuses[12].style)
 
     def test_edit_and_delete_log(self):
         from schedule.models import CourseCalendar

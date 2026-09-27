@@ -19,7 +19,7 @@
 
     <div class="form-group">
         <label>{{ form.days.label }}</label>
-        <div style="background-color: var(--gray-50); padding: 1rem; border-radius: var(--border-radius);">
+        <div class="info-box" style="margin: 0;">
             {{ form.days }}
         </div>
         {% if form.days.errors %}
@@ -49,7 +49,7 @@
     </div>
     {% endif %}
 
-    <p class="text-muted" style="font-size: 0.875rem; margin-top: 1rem;">
+    <p class="form-help mt-3">
         Select one or more days for this time slot. Each schedule can cover multiple days with the same start and end times.
     </p>
 
