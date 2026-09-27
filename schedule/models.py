@@ -38,6 +38,17 @@ class LogStatus(models.TextChoices):
     DELAYED = 'delayed', 'Delayed'
     MANY = 'many', 'Many logs'
 
+    @property
+    def style(self):
+        """Inline CSS (background, text color) used to paint a calendar session"""
+        background, color = {
+            LogStatus.NONE: ('#e5e7eb', '#374151'),
+            LogStatus.OK: ('#dcfce7', '#166534'),
+            LogStatus.DELAYED: ('#fee2e2', '#991b1b'),
+            LogStatus.MANY: ('#ffedd5', '#9a3412'),
+        }[self]
+        return f'background: {background}; color: {color};'
+
 
 class CourseCalendar(models.Model):
     """Represents the original scheduled date/time for a course topic"""
@@ -66,7 +77,7 @@ class CourseCalendar(models.Model):
 
     @property
     def log_status(self):
-        """Calendar color: none (gray), ok (green), delayed (red), many (orange)"""
+        """Session's LogStatus; its colors live on LogStatus.style"""
         logs = list(self.logs.all())  # uses prefetch_related('logs') when present
         if not logs:
             return LogStatus.NONE
