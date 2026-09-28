@@ -8,6 +8,7 @@ app_name = 'courses'
 template_patterns = [
     # Home and Courses
     path('', views.HomeView.as_view(), name='home'),
+    path('today/', views.TodayView.as_view(), name='today'),
     path('courses/', views.CourseListView.as_view(), name='course-list'),
 ]
 

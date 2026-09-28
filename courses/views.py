@@ -40,6 +40,20 @@ class HomeView(TemplateView):
         return context
 
 
+class TodayView(TemplateView):
+    """Today's sessions across all courses, with their topic and materials"""
+    template_name = 'courses/today.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+        context['today'] = today
+        context['sessions'] = CourseCalendar.objects.filter(session_date=today).select_related(
+            'course__assignature', 'topic'
+        ).prefetch_related('logs', 'topic__materials').order_by('start_time')
+        return context
+
+
 class CourseListView(ListView):
     """Display only courses whose period is currently active"""
     model = Course

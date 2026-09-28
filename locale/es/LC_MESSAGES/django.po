@@ -873,5 +873,12 @@ msgstr "Cerrar"
 
 #: templates/base.html:51
 msgid "Course Calendar Application"
-
 msgstr "Aplicación de calendario de cursos"
+
+#: templates/base.html
+msgid "Today"
+msgstr "Hoy"
+
+#: courses/templates/courses/today.html
+msgid "No sessions scheduled for today."
+msgstr "No hay sesiones programadas para hoy."

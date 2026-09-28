@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{% block title %}{% translate "Schedule" %} - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Schedule" %} - {{ course }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
     <a href="/">{% translate "Home" %}</a> /
-    <span>{{ course.name }}</span> /
+    <span>{{ course }}</span> /
     <span>{% translate "Schedule" %}</span>
 </div>
 
 <div class="page-header">
     <div>
         <h1 class="page-title">{% translate "Course Schedule" %}</h1>
-        <p class="page-subtitle">{{ course.name }}</p>
+        <p class="page-subtitle">{{ course }}</p>
     </div>
     <button class="btn btn-primary"
             hx-get="{% url 'courses:schedule-create' course.id %}"

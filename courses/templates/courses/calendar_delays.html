@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{% block title %}{% translate "Delays" %} - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Delays" %} - {{ course }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
     <a href="/">{% translate "Home" %}</a> /
-    <span>{{ course.name }}</span> /
+    <span>{{ course }}</span> /
     <a href="{% url 'courses:calendar-list' course.id %}">{% translate "Calendar" %}</a> /
     <span>{% translate "Delays" %}</span>
 </div>
@@ -14,7 +14,7 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">{% translate "Calendar vs Logs" %}</h1>
-        <p class="page-subtitle">{{ course.name }} — {% translate "current delay:" %} <strong>{% blocktranslate count days=current_delay %}{{ days }} day{% plural %}{{ days }} days{% endblocktranslate %}</strong>,
+        <p class="page-subtitle">{{ course }} — {% translate "current delay:" %} <strong>{% blocktranslate count days=current_delay %}{{ days }} day{% plural %}{{ days }} days{% endblocktranslate %}</strong>,
             {% blocktranslate count n=delayed_count %}{{ n }} delayed session{% plural %}{{ n }} delayed sessions{% endblocktranslate %}, {% blocktranslate count days=total_delay %}{{ days }} day total{% plural %}{{ days }} days total{% endblocktranslate %}</p>
     </div>
 </div>

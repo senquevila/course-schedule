@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{% block title %}{% translate "Calendar" %} - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Calendar" %} - {{ course }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
     <a href="/">{% translate "Home" %}</a> /
-    <span>{{ course.name }}</span> /
+    <span>{{ course }}</span> /
     <span>{% translate "Calendar" %}</span>
 </div>
 
 <div class="page-header">
     <div>
         <h1 class="page-title">{% translate "Course Calendar" %}</h1>
-        <p class="page-subtitle">{{ course.name }}</p>
+        <p class="page-subtitle">{{ course }}</p>
     </div>
     <form method="post" action="{% url 'courses:calendar-generate' course.id %}">
         {% csrf_token %}

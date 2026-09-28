@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{% block title %}{% translate "Import Topics from Syllabus" %} - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Import Topics from Syllabus" %} - {{ course }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
     <a href="/">{% translate "Home" %}</a> /
-    <a href="{% url 'courses:topic-list' course.id %}">{% blocktranslate with name=course.name %}{{ name }} Topics{% endblocktranslate %}</a> /
+    <a href="{% url 'courses:topic-list' course.id %}">{% blocktranslate with name=course %}{{ name }} Topics{% endblocktranslate %}</a> /
     <span>{% translate "Import from Syllabus" %}</span>
 </div>
 

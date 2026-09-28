@@ -2,19 +2,19 @@
 {% load i18n %}
 {% load custom_filters %}
 
-{% block title %}{% translate "Review Topics" %} - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Review Topics" %} - {{ course }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
     <a href="/">{% translate "Home" %}</a> /
-    <a href="{% url 'courses:topic-list' course.id %}">{% blocktranslate with name=course.name %}{{ name }} Topics{% endblocktranslate %}</a> /
+    <a href="{% url 'courses:topic-list' course.id %}">{% blocktranslate with name=course %}{{ name }} Topics{% endblocktranslate %}</a> /
     <span>{% translate "Review Extracted Topics" %}</span>
 </div>
 
 <div class="page-header">
     <div>
         <h1 class="page-title">{% translate "Review Extracted Topics" %}</h1>
-        <p class="page-subtitle">{% blocktranslate with name=course.name %}Edit the extracted topics before importing them into {{ name }}{% endblocktranslate %}</p>
+        <p class="page-subtitle">{% blocktranslate with name=course %}Edit the extracted topics before importing them into {{ name }}{% endblocktranslate %}</p>
     </div>
 </div>
 

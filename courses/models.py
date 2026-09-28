@@ -50,7 +50,7 @@ class Course(models.Model):
         unique_together = ['assignature', 'name', 'period']
 
     def __str__(self):
-        return f"{self.name} ({self.period.name})"
+        return f"{self.assignature.code} ({self.name})"
 
 
 class Topic(models.Model):

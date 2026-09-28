@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Today" %} - {% translate "Course Calendar" %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% translate "Today" %}</h1>
+        <p class="page-subtitle">{{ today|date:"l, j F Y" }}</p>
+    </div>
+</div>
+
+{% translate "Unassigned" as unassigned %}
+{# ponytail: re-fetch this list when a log is saved in the modal #}
+<div id="today-sessions"
+     hx-get="{% url 'courses:today' %}"
+     hx-trigger="calendarChanged from:body"
+     hx-select="#today-sessions"
+     hx-swap="outerHTML"
+     hx-disinherit="*">
+{% if sessions %}
+<div class="courses-grid">
+    {% for session in sessions %}
+    <div class="course-card">
+        <div class="course-header">
+            <h3>{{ session.start_time|time:"H:i" }}–{{ session.end_time|time:"H:i" }} · {{ session.course }}</h3>
+            <span class="course-code" style="{{ session.log_status.style }}">{{ session.log_status.label }}</span>
+        </div>
+        <div class="course-body">
+            <dl>
+                <dt>{% translate "Topic" %}</dt>
+                <dd>{% if session.topic %}{{ session.topic.code }} - {{ session.topic.name }}{% else %}{{ unassigned }}{% endif %}</dd>
+                {% if session.topic.description %}
+                <dt>{% translate "Description" %}</dt>
+                <dd>{{ session.topic.description }}</dd>
+                {% endif %}
+                <dt>{% translate "Materials" %}</dt>
+                <dd>
+                    {% for material in session.topic.materials.all %}
+                    {% if material.material_type == "url" %}<a href="{{ material.url_or_path }}" target="_blank" rel="noopener noreferrer">{{ material.name }}</a>{% else %}{{ material.name }} <code>{{ material.url_or_path }}</code>{% endif %}{% if not forloop.last %}<br>{% endif %}
+                    {% empty %}
+                    <span class="text-muted">{% translate "None" %}</span>
+                    {% endfor %}
+                </dd>
+            </dl>
+        </div>
+        <div class="course-footer">
+            <button class="btn btn-sm btn-primary"
+                    hx-get="{% url 'courses:calendar-session-detail' session.course_id session.id %}"
+                    hx-target="#modal-body"
+                    onclick="openModal()">{% translate "Add Log" %}</button>
+            <a href="{% url 'courses:calendar-list' session.course_id %}" class="btn btn-sm btn-secondary">{% translate "Calendar" %}</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info"><p>{% translate "No sessions scheduled for today." %}</p></div>
+{% endif %}
+</div>
+{% endblock %}

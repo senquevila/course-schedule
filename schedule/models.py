@@ -21,7 +21,7 @@ class CourseSchedule(models.Model):
     def __str__(self):
         day_names = {0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat'}
         days_str = ', '.join([day_names.get(d, str(d)) for d in sorted(self.days)])
-        return f"{self.course.name} - {days_str} {self.start_time}-{self.end_time}"
+        return f"{self.course} - {days_str} {self.start_time}-{self.end_time}"
 
     def get_days_display(self):
         """Return a human-readable string of the scheduled days"""
@@ -67,7 +67,7 @@ class CourseCalendar(models.Model):
 
     def __str__(self):
         topic_name = self.topic.name if self.topic else 'Unassigned'
-        return f"{self.course.name} - {self.session_date} {self.start_time} ({topic_name})"
+        return f"{self.course} - {self.session_date} {self.start_time} ({topic_name})"
 
     @property
     def log_status(self):
