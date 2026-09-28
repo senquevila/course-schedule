@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 
 class Period(models.Model):
@@ -94,9 +95,9 @@ class Material(models.Model):
     MATERIAL_TYPES = [
         ('pdf', 'PDF'),
         ('url', 'URL'),
-        ('image', 'Image'),
-        ('video', 'Video'),
-        ('document', 'Document'),
+        ('image', _('Image')),
+        ('video', _('Video')),
+        ('document', _('Document')),
     ]
 
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='materials')

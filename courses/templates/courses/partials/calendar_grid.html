@@ -1,3 +1,4 @@
+{% load i18n %}
 {% load static %}
 
 <div id="calendar-grid"
@@ -16,14 +17,14 @@
            hx-get="{% url 'courses:calendar-list' course.id %}?year={{ prev_year }}&month={{ prev_month }}"
            hx-target="#calendar-grid"
            hx-swap="outerHTML"
-           hx-push-url="true">← Prev</a>
+           hx-push-url="true">← {% translate "Prev" %}</a>
         <h2>{{ month_name }}</h2>
         <a class="btn btn-secondary btn-sm"
            href="?year={{ next_year }}&month={{ next_month }}"
            hx-get="{% url 'courses:calendar-list' course.id %}?year={{ next_year }}&month={{ next_month }}"
            hx-target="#calendar-grid"
            hx-swap="outerHTML"
-           hx-push-url="true">Next →</a>
+           hx-push-url="true">{% translate "Next" %} →</a>
     </div>
 
     <ul class="calendar-legend">
@@ -32,6 +33,7 @@
         {% endfor %}
     </ul>
 
+    {% translate "Unassigned" as unassigned %}
     <div class="calendar-scroll">
     <table class="calendar-grid">
         <thead>
@@ -54,7 +56,7 @@
                          hx-target="#modal-body"
                          onclick="openModal()">
                         <span class="calendar-session-time">{{ session.start_time|time:"H:i" }}</span>
-                        <span class="calendar-session-topic">{{ session.topic.name|default:"Unassigned" }}</span>
+                        <span class="calendar-session-topic">{{ session.topic.name|default:unassigned }}</span>
                     </div>
                     {% endfor %}
                     {% endif %}

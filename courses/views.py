@@ -13,6 +13,9 @@ from datetime import date, time, timedelta
 
 from .models import Course, Topic, Material, SyllabusDraftTopic
 from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm, CourseCalendarLogForm
+from django.utils import formats
+from django.utils.dates import WEEKDAYS_ABBR
+from django.utils.translation import gettext as _, ngettext
 from schedule.models import CourseSchedule, CourseCalendar, CourseCalendarLog, NonWorkingDay, LogStatus
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
@@ -103,7 +106,7 @@ class TopicCreateView(View):
             topic = form.save(commit=False)
             topic.course = course
             topic.save()
-            messages.success(request, f'Topic "{topic.name}" created successfully.')
+            messages.success(request, _('Topic "%(name)s" created successfully.') % {'name': topic.name})
 
             # Return the new topic row
             return render(
@@ -153,7 +156,7 @@ class TopicUpdateView(View):
 
         if form.is_valid():
             topic = form.save()
-            messages.success(request, f'Topic "{topic.name}" updated successfully.')
+            messages.success(request, _('Topic "%(name)s" updated successfully.') % {'name': topic.name})
 
             # Return the updated topic row
             return render(
@@ -186,7 +189,7 @@ class TopicDeleteView(View):
         topic_name = topic.name
         topic.delete()
 
-        messages.success(request, f'Topic "{topic_name}" deleted successfully.')
+        messages.success(request, _('Topic "%(name)s" deleted successfully.') % {'name': topic_name})
         return HttpResponse(status=200)
 
 
@@ -240,7 +243,7 @@ class MaterialCreateView(View):
             material = form.save(commit=False)
             material.topic = topic
             material.save()
-            messages.success(request, f'Material "{material.name}" added successfully.')
+            messages.success(request, _('Material "%(name)s" added successfully.') % {'name': material.name})
 
             # Return the new material row
             return render(
@@ -294,7 +297,7 @@ class MaterialUpdateView(View):
 
         if form.is_valid():
             material = form.save()
-            messages.success(request, f'Material "{material.name}" updated successfully.')
+            messages.success(request, _('Material "%(name)s" updated successfully.') % {'name': material.name})
 
             # Return the updated material row
             return render(
@@ -329,7 +332,7 @@ class MaterialDeleteView(View):
         material_name = material.name
         material.delete()
 
-        messages.success(request, f'Material "{material_name}" deleted successfully.')
+        messages.success(request, _('Material "%(name)s" deleted successfully.') % {'name': material_name})
         return HttpResponse(status=200)
 
 
@@ -370,8 +373,8 @@ class CourseCalendarListView(TemplateView):
         context.update({
             'course': course,
             'weeks': weeks,
-            'month_name': date(year, month, 1).strftime('%B %Y'),
-            'weekday_names': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            'month_name': formats.date_format(date(year, month, 1), 'YEAR_MONTH_FORMAT'),
+            'weekday_names': [WEEKDAYS_ABBR[(i - 1) % 7] for i in range(7)],  # Sunday first
             'prev_year': prev_month.year,
             'prev_month': prev_month.month,
             'next_year': next_month.year,
@@ -603,7 +606,7 @@ class CourseScheduleCreateView(View):
             if existing:
                 messages.warning(
                     request,
-                    'A schedule with this time range already exists. Please edit it to add more days.'
+                    _('A schedule with this time range already exists. Please edit it to add more days.')
                 )
                 return HttpResponse(status=400)
 
@@ -617,7 +620,7 @@ class CourseScheduleCreateView(View):
 
             messages.success(
                 request,
-                f'Schedule created for {schedule.get_days_display()} successfully.'
+                _('Schedule created for %(days)s successfully.') % {'days': schedule.get_days_display()}
             )
 
             # Return the new schedule
@@ -681,7 +684,7 @@ class CourseScheduleUpdateView(View):
             schedule.start_time = start_time
             schedule.end_time = end_time
             schedule.save()
-            messages.success(request, 'Schedule updated successfully.')
+            messages.success(request, _('Schedule updated successfully.'))
 
             # Return the updated schedule row
             return render(
@@ -713,7 +716,7 @@ class CourseScheduleDeleteView(View):
         schedule = get_object_or_404(CourseSchedule, pk=schedule_id, course=course)
         schedule.delete()
 
-        messages.success(request, f'Schedule deleted successfully.')
+        messages.success(request, _('Schedule deleted successfully.'))
         return HttpResponse(status=200)
 
 
@@ -742,7 +745,7 @@ def _generate_calendar_sessions(course, schedule, non_working_days, after=None):
         day_of_week = (current.weekday() + 1) % 7  # model: 0=Sunday..6=Saturday
         if day_of_week in schedule.days and current not in non_working_days:
             for hour in range(schedule.start_time.hour, schedule.end_time.hour):
-                _, created = CourseCalendar.objects.get_or_create(
+                _session, created = CourseCalendar.objects.get_or_create(
                     course=course,
                     session_date=current,
                     start_time=time(hour, 0),
@@ -801,7 +804,7 @@ class CourseCalendarGenerateView(View):
         created_count = _generate_calendar_sessions(course, schedule, non_working_days)
         _assign_topics(course)
 
-        messages.success(request, f'{created_count} calendar session(s) generated.')
+        messages.success(request, ngettext('%(count)d calendar session generated.', '%(count)d calendar sessions generated.', created_count) % {'count': created_count})
         return redirect('courses:schedule-list', course_id=course.id)
 
 
@@ -820,7 +823,7 @@ class CourseCalendarGenerateAllView(View):
         )
         _assign_topics(course)
 
-        messages.success(request, f'{created_count} calendar session(s) generated.')
+        messages.success(request, ngettext('%(count)d calendar session generated.', '%(count)d calendar sessions generated.', created_count) % {'count': created_count})
         return redirect('courses:calendar-list', course_id=course.id)
 
 
@@ -856,7 +859,7 @@ class SyllabusUploadView(View):
                 extracted_topics = parse_syllabus_csv(file_content)
 
                 if not extracted_topics:
-                    messages.warning(request, 'No topics found in the CSV file.')
+                    messages.warning(request, _('No topics found in the CSV file.'))
                     return render(
                         request,
                         'courses/syllabus_upload.html',
@@ -888,7 +891,7 @@ class SyllabusUploadView(View):
             except Exception as e:
                 messages.error(
                     request,
-                    f'Error processing file: {str(e)}'
+                    _('Error processing file: %(error)s') % {'error': e}
                 )
                 return render(
                     request,
@@ -920,7 +923,7 @@ class SyllabusReviewView(View):
         draft_topics = list(SyllabusDraftTopic.objects.filter(course=course))
 
         if not draft_topics:
-            messages.error(request, 'No draft topics found. Please upload a syllabus file.')
+            messages.error(request, _('No draft topics found. Please upload a syllabus file.'))
             return redirect('courses:syllabus-upload', course_id=course_id)
 
         form = TopicReviewForm(draft_topics)
@@ -943,7 +946,7 @@ class SyllabusReviewView(View):
         draft_topics = list(SyllabusDraftTopic.objects.filter(course=course))
 
         if not draft_topics:
-            messages.error(request, 'No draft topics found.')
+            messages.error(request, _('No draft topics found.'))
             return redirect('courses:syllabus-upload', course_id=course_id)
 
         form = TopicReviewForm(draft_topics, request.POST)
@@ -952,7 +955,7 @@ class SyllabusReviewView(View):
             reviewed_topics = form.get_reviewed_topics()
 
             if not reviewed_topics:
-                messages.warning(request, 'No topics selected for import.')
+                messages.warning(request, _('No topics selected for import.'))
                 return redirect('courses:syllabus-review', course_id=course_id)
 
             # Save the reviewer's edits back onto the draft rows, so they survive
@@ -989,7 +992,7 @@ class SyllabusReviewView(View):
 
                 messages.success(
                     request,
-                    f'Successfully imported {created_count} topic(s) from syllabus!'
+                    ngettext('Successfully imported %(count)d topic from syllabus!', 'Successfully imported %(count)d topics from syllabus!', created_count) % {'count': created_count}
                 )
 
                 return redirect('courses:topic-list', course_id=course_id)
@@ -997,7 +1000,7 @@ class SyllabusReviewView(View):
             except IntegrityError as e:
                 messages.error(
                     request,
-                    f'Import cancelled, no topics were saved: a topic with that order already exists ({e})'
+                    _('Import cancelled, no topics were saved: a topic with that order already exists (%(error)s)') % {'error': e}
                 )
                 return render(
                     request,
@@ -1009,7 +1012,7 @@ class SyllabusReviewView(View):
                     }
                 )
             except Exception as e:
-                messages.error(request, f'Error creating topics: {str(e)}')
+                messages.error(request, _('Error creating topics: %(error)s') % {'error': e})
                 return render(
                     request,
                     'courses/syllabus_review.html',
@@ -1037,5 +1040,5 @@ class SyllabusReviewCancelView(View):
     def post(self, request, course_id):
         course = get_object_or_404(Course, pk=course_id)
         SyllabusDraftTopic.objects.filter(course=course).delete()
-        messages.info(request, 'Syllabus import cancelled.')
+        messages.info(request, _('Syllabus import cancelled.'))
         return redirect('courses:topic-list', course_id=course_id)

@@ -1,5 +1,6 @@
+{% load i18n %}
 <div class="modal-header">
-    <h2 class="modal-title">Log for {{ session.session_date }}</h2>
+    <h2 class="modal-title">{% blocktranslate with date=session.session_date %}Log for {{ date }}{% endblocktranslate %}</h2>
     <button class="modal-close" onclick="closeModal()">×</button>
 </div>
 
@@ -35,12 +36,12 @@
 
     <div class="modal-footer">
         {% if is_edit %}
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">{% translate "Cancel" %}</button>
         {% else %}
         <button type="button" class="btn btn-secondary"
                 hx-get="{% url 'courses:calendar-session-detail' session.course_id session.id %}"
-                hx-target="#modal-body">Back</button>
+                hx-target="#modal-body">{% translate "Back" %}</button>
         {% endif %}
-        <button type="submit" class="btn btn-primary">Save Log</button>
+        <button type="submit" class="btn btn-primary">{% translate "Save Log" %}</button>
     </div>
 </form>

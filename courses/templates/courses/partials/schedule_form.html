@@ -1,5 +1,6 @@
+{% load i18n %}
 <div class="modal-header">
-    <h2 class="modal-title">{% if is_create %}Add Schedule{% else %}Edit Schedule{% endif %}</h2>
+    <h2 class="modal-title">{% if is_create %}{% translate "Add Schedule" %}{% else %}{% translate "Edit Schedule" %}{% endif %}</h2>
     <button class="modal-close" onclick="closeModal()">×</button>
 </div>
 
@@ -50,14 +51,14 @@
     {% endif %}
 
     <p class="form-help mt-3">
-        Select one or more days for this time slot. Each schedule can cover multiple days with the same start and end times.
+        {% translate "Select one or more days for this time slot. Each schedule can cover multiple days with the same start and end times." %}
     </p>
 
     <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">{% translate "Cancel" %}</button>
         <button type="submit" class="btn btn-primary">
             <span class="htmx-indicator">...</span>
-            {% if is_create %}Create Schedule{% else %}Save Changes{% endif %}
+            {% if is_create %}{% translate "Create Schedule" %}{% else %}{% translate "Save Changes" %}{% endif %}
         </button>
     </div>
 </form>

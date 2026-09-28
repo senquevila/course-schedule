@@ -1,18 +1,19 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Import Topics from Syllabus - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Import Topics from Syllabus" %} - {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
-    <a href="/">Home</a> /
-    <a href="{% url 'courses:topic-list' course.id %}">{{ course.name }} Topics</a> /
-    <span>Import from Syllabus</span>
+    <a href="/">{% translate "Home" %}</a> /
+    <a href="{% url 'courses:topic-list' course.id %}">{% blocktranslate with name=course.name %}{{ name }} Topics{% endblocktranslate %}</a> /
+    <span>{% translate "Import from Syllabus" %}</span>
 </div>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Import Topics from Syllabus</h1>
-        <p class="page-subtitle">Upload a CSV file to bulk-create course topics</p>
+        <h1 class="page-title">{% translate "Import Topics from Syllabus" %}</h1>
+        <p class="page-subtitle">{% translate "Upload a CSV file to bulk-create course topics" %}</p>
     </div>
 </div>
 
@@ -21,7 +22,7 @@
         {% csrf_token %}
 
         <div class="upload-section">
-            <h3>Step 1: Upload Syllabus Document</h3>
+            <h3>{% translate "Step 1: Upload Syllabus Document" %}</h3>
 
             <div class="form-group">
                 <label for="{{ form.syllabus_file.id_for_label }}">{{ form.syllabus_file.label }}</label>
@@ -35,26 +36,26 @@
             </div>
 
             <div class="info-box">
-                <h4>📄 Required Template</h4>
-                <p>The file must be a <code>.csv</code> (max 10MB) with this exact header row, in order:</p>
+                <h4>📄 {% translate "Required Template" %}</h4>
+                <p>{% blocktranslate %}The file must be a <code>.csv</code> (max 10MB) with this exact header row, in order:{% endblocktranslate %}</p>
                 <pre><code>code,name,description,order
 T01,Introduction to Programming,Basic programming concepts,1
 T02,Variables and Data Types,Understanding different data types,2
 T03,Control Flow,if/else and loops,3</code></pre>
-                <p><code>code</code> and <code>name</code> are required; <code>description</code> may be empty; <code>order</code> must be a positive integer.</p>
+                <p>{% blocktranslate %}<code>code</code> and <code>name</code> are required; <code>description</code> may be empty; <code>order</code> must be a positive integer.{% endblocktranslate %}</p>
                 <a class="btn btn-secondary btn-sm"
                    download="syllabus_template.csv"
                    href="data:text/csv;charset=utf-8,code%2Cname%2Cdescription%2Corder%0AT01%2CIntroduction%20to%20Programming%2CBasic%20programming%20concepts%2C1%0AT02%2CVariables%20and%20Data%20Types%2CUnderstanding%20different%20data%20types%2C2%0AT03%2CControl%20Flow%2Cif%2Felse%20and%20loops%2C3">
-                    ⬇️ Download CSV Template
+                    ⬇️ {% translate "Download CSV Template" %}
                 </a>
             </div>
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary btn-lg">
                     <span class="htmx-indicator">...</span>
-                    Upload & Extract Topics
+                    {% translate "Upload & Extract Topics" %}
                 </button>
-                <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-secondary">Cancel</a>
+                <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-secondary">{% translate "Cancel" %}</a>
             </div>
         </div>
     </form>

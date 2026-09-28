@@ -2,6 +2,8 @@ from datetime import datetime, time as time_cls
 
 from django import forms
 from django.conf import settings
+from django.utils.dates import WEEKDAYS
+from django.utils.translation import gettext_lazy as _
 from .models import Topic, Material, Course
 from schedule.models import CourseSchedule, CourseCalendarLog
 
@@ -12,25 +14,26 @@ class TopicForm(forms.ModelForm):
     class Meta:
         model = Topic
         fields = ['code', 'name', 'description', 'order']
+        labels = {'code': _('Code'), 'name': _('Name'), 'description': _('Description'), 'order': _('Order')}
         widgets = {
             'code': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'e.g., T01',
+                'placeholder': _('e.g., T01'),
                 'required': True
             }),
             'name': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Topic name',
+                'placeholder': _('Topic name'),
                 'required': True
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-textarea',
-                'placeholder': 'Description (optional)',
+                'placeholder': _('Description (optional)'),
                 'rows': 3
             }),
             'order': forms.NumberInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Order/sequence number',
+                'placeholder': _('Order/sequence number'),
                 'required': True
             }),
         }
@@ -42,15 +45,16 @@ class MaterialForm(forms.ModelForm):
     class Meta:
         model = Material
         fields = ['code', 'name', 'material_type', 'url_or_path']
+        labels = {'code': _('Code'), 'name': _('Name'), 'material_type': _('Material type'), 'url_or_path': _('URL or path')}
         widgets = {
             'code': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'e.g., M01',
+                'placeholder': _('e.g., M01'),
                 'required': True
             }),
             'name': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Material name',
+                'placeholder': _('Material name'),
                 'required': True
             }),
             'material_type': forms.Select(attrs={
@@ -59,7 +63,7 @@ class MaterialForm(forms.ModelForm):
             }),
             'url_or_path': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'URL or file path',
+                'placeholder': _('URL or file path'),
                 'required': True
             }),
         }
@@ -68,15 +72,7 @@ class MaterialForm(forms.ModelForm):
 class CourseScheduleForm(forms.Form):
     """Form for creating and editing course schedules with multiple days"""
 
-    DAY_CHOICES = [
-        (0, 'Sunday'),
-        (1, 'Monday'),
-        (2, 'Tuesday'),
-        (3, 'Wednesday'),
-        (4, 'Thursday'),
-        (5, 'Friday'),
-        (6, 'Saturday'),
-    ]
+    DAY_CHOICES = [(d, WEEKDAYS[(d - 1) % 7]) for d in range(7)]  # 0=Sunday
 
     # Multiple checkboxes for selecting days
     days = forms.MultipleChoiceField(
@@ -85,8 +81,8 @@ class CourseScheduleForm(forms.Form):
             'class': 'form-checkbox'
         }),
         required=True,
-        label='Days of Week',
-        help_text='Select all days this schedule applies to'
+        label=_('Days of Week'),
+        help_text=_('Select all days this schedule applies to')
     )
 
     HOUR_CHOICES = [
@@ -100,7 +96,7 @@ class CourseScheduleForm(forms.Form):
             'class': 'form-select',
             'required': True
         }),
-        label='Start Time'
+        label=_('Start Time')
     )
 
     end_time = forms.ChoiceField(
@@ -109,7 +105,7 @@ class CourseScheduleForm(forms.Form):
             'class': 'form-select',
             'required': True
         }),
-        label='End Time'
+        label=_('End Time')
     )
 
     def clean(self):
@@ -127,12 +123,12 @@ class CourseScheduleForm(forms.Form):
         if start_time and end_time:
             if start_time >= end_time:
                 raise forms.ValidationError(
-                    "End time must be after start time."
+                    _("End time must be after start time.")
                 )
 
         if not days:
             raise forms.ValidationError(
-                "Please select at least one day."
+                _("Please select at least one day.")
             )
 
         # Convert days to integers
@@ -149,8 +145,8 @@ class SyllabusUploadForm(forms.Form):
             'accept': '.csv',
             'required': True
         }),
-        label='Syllabus CSV',
-        help_text='Upload a CSV file with columns: code,name,description,order'
+        label=_('Syllabus CSV'),
+        help_text=_('Upload a CSV file with columns: code,name,description,order')
     )
 
     def clean_syllabus_file(self):
@@ -159,10 +155,10 @@ class SyllabusUploadForm(forms.Form):
 
         if file:
             if not file.name.lower().endswith('.csv'):
-                raise forms.ValidationError('Only .csv files are supported')
+                raise forms.ValidationError(_('Only .csv files are supported'))
 
             if file.size > 10 * 1024 * 1024:
-                raise forms.ValidationError('File size must not exceed 10MB')
+                raise forms.ValidationError(_('File size must not exceed 10MB'))
 
         return file
 
@@ -183,16 +179,16 @@ class TopicReviewForm(forms.Form):
                     'placeholder': 'T01',
                     'size': '10'
                 }),
-                label=f'Code'
+                label=_('Code')
             )
 
             self.fields[f'topic_{i}_name'] = forms.CharField(
                 initial=draft.name,
                 widget=forms.TextInput(attrs={
                     'class': 'form-input',
-                    'placeholder': 'Topic name'
+                    'placeholder': _('Topic name')
                 }),
-                label=f'Name'
+                label=_('Name')
             )
 
             self.fields[f'topic_{i}_description'] = forms.CharField(
@@ -200,9 +196,9 @@ class TopicReviewForm(forms.Form):
                 widget=forms.Textarea(attrs={
                     'class': 'form-textarea',
                     'rows': 2,
-                    'placeholder': 'Topic description (optional)'
+                    'placeholder': _('Topic description (optional)')
                 }),
-                label=f'Description',
+                label=_('Description'),
                 required=False
             )
 
@@ -212,7 +208,7 @@ class TopicReviewForm(forms.Form):
                     'class': 'form-input',
                     'size': '5'
                 }),
-                label=f'Order'
+                label=_('Order')
             )
 
             self.fields[f'topic_{i}_include'] = forms.BooleanField(
@@ -220,7 +216,7 @@ class TopicReviewForm(forms.Form):
                 widget=forms.CheckboxInput(attrs={
                     'class': 'form-checkbox'
                 }),
-                label=f'Include this topic',
+                label=_('Include this topic'),
                 required=False
             )
 
@@ -254,15 +250,20 @@ class TopicReviewForm(forms.Form):
 class CourseCalendarLogForm(forms.ModelForm):
     """Form for logging what actually happened in a calendar session"""
     has_issues = forms.ChoiceField(
-        choices=[('no', 'No problem'), ('yes', 'I have issues')],
+        choices=[('no', _('No problem')), ('yes', _('I have issues'))],
         initial='no',
         widget=forms.RadioSelect,
-        label='How did it go?',
+        label=_('How did it go?'),
     )
 
     class Meta:
         model = CourseCalendarLog
         fields = ['actual_date', 'problems', 'solutions']
+        labels = {
+            'actual_date': _('Actual date'),
+            'problems': _('Problems'),
+            'solutions': _('Solutions'),
+        }
         widgets = {
             'actual_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
             'problems': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 2}),

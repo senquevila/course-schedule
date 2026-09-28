@@ -1,20 +1,21 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Delays - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Delays" %} - {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
-    <a href="/">Home</a> /
+    <a href="/">{% translate "Home" %}</a> /
     <span>{{ course.name }}</span> /
-    <a href="{% url 'courses:calendar-list' course.id %}">Calendar</a> /
-    <span>Delays</span>
+    <a href="{% url 'courses:calendar-list' course.id %}">{% translate "Calendar" %}</a> /
+    <span>{% translate "Delays" %}</span>
 </div>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Calendar vs Logs</h1>
-        <p class="page-subtitle">{{ course.name }} — current delay: <strong>{{ current_delay }} day{{ current_delay|pluralize }}</strong>,
-            {{ delayed_count }} delayed session{{ delayed_count|pluralize }}, {{ total_delay }} day{{ total_delay|pluralize }} total</p>
+        <h1 class="page-title">{% translate "Calendar vs Logs" %}</h1>
+        <p class="page-subtitle">{{ course.name }} — {% translate "current delay:" %} <strong>{% blocktranslate count days=current_delay %}{{ days }} day{% plural %}{{ days }} days{% endblocktranslate %}</strong>,
+            {% blocktranslate count n=delayed_count %}{{ n }} delayed session{% plural %}{{ n }} delayed sessions{% endblocktranslate %}, {% blocktranslate count days=total_delay %}{{ days }} day total{% plural %}{{ days }} days total{% endblocktranslate %}</p>
     </div>
 </div>
 
@@ -22,12 +23,12 @@
 <table>
     <thead>
         <tr>
-            <th>Scheduled</th>
-            <th>Time</th>
-            <th>Topic</th>
-            <th>Actual</th>
-            <th>Delay (days)</th>
-            <th>Problems</th>
+            <th>{% translate "Scheduled" %}</th>
+            <th>{% translate "Time" %}</th>
+            <th>{% translate "Topic" %}</th>
+            <th>{% translate "Actual" %}</th>
+            <th>{% translate "Delay (days)" %}</th>
+            <th>{% translate "Problems" %}</th>
         </tr>
     </thead>
     <tbody>
@@ -44,10 +45,10 @@
     </tbody>
 </table>
 {% else %}
-<div class="alert alert-info"><p>No sessions logged yet.</p></div>
+<div class="alert alert-info"><p>{% translate "No sessions logged yet." %}</p></div>
 {% endif %}
 
 <div class="mt-4">
-    <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-secondary">← Back to Calendar</a>
+    <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-secondary">← {% translate "Back to Calendar" %}</a>
 </div>
 {% endblock %}

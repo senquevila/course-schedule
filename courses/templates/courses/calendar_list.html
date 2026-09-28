@@ -1,24 +1,25 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Calendar - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Calendar" %} - {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
-    <a href="/">Home</a> /
+    <a href="/">{% translate "Home" %}</a> /
     <span>{{ course.name }}</span> /
-    <span>Calendar</span>
+    <span>{% translate "Calendar" %}</span>
 </div>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Course Calendar</h1>
+        <h1 class="page-title">{% translate "Course Calendar" %}</h1>
         <p class="page-subtitle">{{ course.name }}</p>
     </div>
     <form method="post" action="{% url 'courses:calendar-generate' course.id %}">
         {% csrf_token %}
         <button type="submit" class="btn btn-primary"
-                onclick="return confirm('Generate calendar sessions for all schedules of this course?');">
-            Generate Calendar
+                onclick="return confirm('{% translate "Generate calendar sessions for all schedules of this course?" %}');">
+            {% translate "Generate Calendar" %}
         </button>
     </form>
 </div>
@@ -26,7 +27,7 @@
 {% include "courses/partials/calendar_grid.html" %}
 
 <div class="mt-4">
-    <a href="{% url 'courses:schedule-list' course.id %}" class="btn btn-secondary">← Back to Schedule</a>
-    <a href="{% url 'courses:calendar-delays' course.id %}" class="btn btn-secondary">Delays</a>
+    <a href="{% url 'courses:schedule-list' course.id %}" class="btn btn-secondary">← {% translate "Back to Schedule" %}</a>
+    <a href="{% url 'courses:calendar-delays' course.id %}" class="btn btn-secondary">{% translate "Delays" %}</a>
 </div>
 {% endblock %}

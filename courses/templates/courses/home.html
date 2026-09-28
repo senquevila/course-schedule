@@ -1,28 +1,30 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Home - Course Calendar{% endblock %}
+{% block title %}{% translate "Home" %} - {% translate "Course Calendar" %}{% endblock %}
 
 {% block content %}
 <section class="hero">
-    <p class="hero-label">Course Calendar</p>
-    <h1 class="hero-title">Plan, teach, and track every session</h1>
-    <p class="hero-text">Plan each course's sessions, log how each class actually went, and see where you're running behind.</p>
-    <a href="{% url 'courses:course-list' %}" class="btn btn-accent">View courses</a>
+    <p class="hero-label">{% translate "Course Calendar" %}</p>
+    <h1 class="hero-title">{% translate "Plan, teach, and track every session" %}</h1>
+    <p class="hero-text">{% translate "Plan each course's sessions, log how each class actually went, and see where you're running behind." %}</p>
+    <a href="{% url 'courses:course-list' %}" class="btn btn-accent">{% translate "View courses" %}</a>
     <span class="hero-leaf" aria-hidden="true"></span>
 </section>
 
 <dl class="stats">
-    <div><dd>{{ courses }}</dd><dt>Courses</dt></div>
-    <div><dd>{{ topics }}</dd><dt>Topics</dt></div>
-    <div><dd>{{ materials }}</dd><dt>Materials</dt></div>
-    <div><dd>{{ schedules }}</dd><dt>Schedules</dt></div>
+    <div><dd>{{ courses }}</dd><dt>{% translate "Courses" %}</dt></div>
+    <div><dd>{{ topics }}</dd><dt>{% translate "Topics" %}</dt></div>
+    <div><dd>{{ materials }}</dd><dt>{% translate "Materials" %}</dt></div>
+    <div><dd>{{ schedules }}</dd><dt>{% translate "Schedules" %}</dt></div>
 </dl>
 
 <section class="section">
     <div class="section-header">
-        <h2>Recent courses</h2>
-        {% if recent_courses %}<a href="{% url 'courses:course-list' %}">All courses</a>{% endif %}
+        <h2>{% translate "Recent courses" %}</h2>
+        {% if recent_courses %}<a href="{% url 'courses:course-list' %}">{% translate "All courses" %}</a>{% endif %}
     </div>
+    {% translate "Not assigned" as not_assigned %}
     {% if recent_courses %}
     <div class="courses-grid">
         {% for course in recent_courses %}
@@ -33,56 +35,56 @@
             </div>
             <div class="course-body">
                 <dl>
-                    <dt>Period</dt>
+                    <dt>{% translate "Period" %}</dt>
                     <dd>{{ course.period.name }}</dd>
-                    <dt>Instructor</dt>
-                    <dd>{{ course.instructor_name|default:"Not assigned" }}</dd>
-                    <dt>Location</dt>
-                    <dd>{{ course.location|default:"Not assigned" }}</dd>
+                    <dt>{% translate "Instructor" %}</dt>
+                    <dd>{{ course.instructor_name|default:not_assigned }}</dd>
+                    <dt>{% translate "Location" %}</dt>
+                    <dd>{{ course.location|default:not_assigned }}</dd>
                 </dl>
             </div>
             <div class="course-footer">
-                <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-sm btn-primary">Calendar</a>
-                <a href="{% url 'courses:calendar-log-list' course.id %}" class="btn btn-sm btn-secondary">Logs</a>
-                <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-sm btn-secondary">Topics</a>
-                <a href="{% url 'courses:schedule-list' course.id %}" class="btn btn-sm btn-secondary">Schedule</a>
+                <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-sm btn-primary">{% translate "Calendar" %}</a>
+                <a href="{% url 'courses:calendar-log-list' course.id %}" class="btn btn-sm btn-secondary">{% translate "Logs" %}</a>
+                <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-sm btn-secondary">{% translate "Topics" %}</a>
+                <a href="{% url 'courses:schedule-list' course.id %}" class="btn btn-sm btn-secondary">{% translate "Schedule" %}</a>
             </div>
         </div>
         {% endfor %}
     </div>
     {% else %}
     <div class="alert alert-info">
-        <p>No courses yet. Follow the steps below to set up your first one.</p>
+        <p>{% translate "No courses yet. Follow the steps below to set up your first one." %}</p>
     </div>
     {% endif %}
 </section>
 
 <section class="section" id="guide">
-    <h2>Setting up a course</h2>
+    <h2>{% translate "Setting up a course" %}</h2>
     <ol class="steps">
         <li>
-            <h3>Create a period</h3>
-            <p>In the <a href="/admin/">admin panel</a>, add a teaching period such as Spring 2026.</p>
+            <h3>{% translate "Create a period" %}</h3>
+            <p>{% blocktranslate %}In the <a href="/admin/">admin panel</a>, add a teaching period such as Spring 2026.{% endblocktranslate %}</p>
         </li>
         <li>
-            <h3>Create an assignature</h3>
-            <p>Define the subject and its weekly hours, for example CS101 Data Structures, 3 hours a week.</p>
+            <h3>{% translate "Create an assignature" %}</h3>
+            <p>{% translate "Define the subject and its weekly hours, for example CS101 Data Structures, 3 hours a week." %}</p>
         </li>
         <li>
-            <h3>Create a course</h3>
-            <p>Link the assignature to a period and add the instructor and location.</p>
+            <h3>{% translate "Create a course" %}</h3>
+            <p>{% translate "Link the assignature to a period and add the instructor and location." %}</p>
         </li>
         <li>
-            <h3>Set up the schedule</h3>
-            <p>Choose the days and times the course meets each week.</p>
+            <h3>{% translate "Set up the schedule" %}</h3>
+            <p>{% translate "Choose the days and times the course meets each week." %}</p>
         </li>
         <li>
-            <h3>Add topics</h3>
-            <p>List the course topics in the order you'll teach them, or import them from a syllabus CSV.</p>
+            <h3>{% translate "Add topics" %}</h3>
+            <p>{% translate "List the course topics in the order you'll teach them, or import them from a syllabus CSV." %}</p>
         </li>
         <li>
-            <h3>Attach materials</h3>
-            <p>Link PDFs, URLs, images, videos, and documents to each topic.</p>
+            <h3>{% translate "Attach materials" %}</h3>
+            <p>{% translate "Link PDFs, URLs, images, videos, and documents to each topic." %}</p>
         </li>
     </ol>
 </section>

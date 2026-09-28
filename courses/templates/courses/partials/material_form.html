@@ -1,5 +1,6 @@
+{% load i18n %}
 <div class="modal-header">
-    <h2 class="modal-title">{% if is_create %}Add Material{% else %}Edit Material{% endif %}</h2>
+    <h2 class="modal-title">{% if is_create %}{% translate "Add Material" %}{% else %}{% translate "Edit Material" %}{% endif %}</h2>
     <button class="modal-close" onclick="closeModal()">×</button>
 </div>
 
@@ -43,10 +44,10 @@
     </div>
 
     <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">{% translate "Cancel" %}</button>
         <button type="submit" class="btn btn-primary">
             <span class="htmx-indicator">...</span>
-            {% if is_create %}Add Material{% else %}Save Changes{% endif %}
+            {% if is_create %}{% translate "Add Material" %}{% else %}{% translate "Save Changes" %}{% endif %}
         </button>
     </div>
 </form>

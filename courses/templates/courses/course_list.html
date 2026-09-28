@@ -1,20 +1,22 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Courses - Course Calendar{% endblock %}
+{% block title %}{% translate "Courses" %} - {% translate "Course Calendar" %}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
-    <a href="/">Home</a> /
-    <span>Courses</span>
+    <a href="/">{% translate "Home" %}</a> /
+    <span>{% translate "Courses" %}</span>
 </div>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">All Courses</h1>
-        <p class="page-subtitle">Manage your courses and access their topics and schedules</p>
+        <h1 class="page-title">{% translate "All Courses" %}</h1>
+        <p class="page-subtitle">{% translate "Manage your courses and access their topics and schedules" %}</p>
     </div>
 </div>
 
+{% translate "Not assigned" as not_assigned %}
 {% if courses %}
 <div class="courses-grid">
     {% for course in courses %}
@@ -25,37 +27,37 @@
         </div>
         <div class="course-body">
             <dl>
-                <dt>Assignature</dt>
+                <dt>{% translate "Assignature" %}</dt>
                 <dd>{{ course.assignature.name }}</dd>
 
-                <dt>Period</dt>
+                <dt>{% translate "Period" %}</dt>
                 <dd>{{ course.period.name }}</dd>
 
-                <dt>Instructor</dt>
-                <dd>{{ course.instructor_name|default:"Not assigned" }}</dd>
+                <dt>{% translate "Instructor" %}</dt>
+                <dd>{{ course.instructor_name|default:not_assigned }}</dd>
 
-                <dt>Location</dt>
-                <dd>{{ course.location|default:"Not assigned" }}</dd>
+                <dt>{% translate "Location" %}</dt>
+                <dd>{{ course.location|default:not_assigned }}</dd>
 
-                <dt>Weekly Hours</dt>
-                <dd>{{ course.assignature.uv }} hours</dd>
+                <dt>{% translate "Weekly Hours" %}</dt>
+                <dd>{% blocktranslate count hours=course.assignature.uv %}{{ hours }} hour{% plural %}{{ hours }} hours{% endblocktranslate %}</dd>
             </dl>
         </div>
         <div class="course-footer">
-            <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-primary btn-sm">Topics</a>
-            <a href="{% url 'courses:schedule-list' course.id %}" class="btn btn-secondary btn-sm">Schedule</a>
-            <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-secondary btn-sm">Calendar</a>
+            <a href="{% url 'courses:topic-list' course.id %}" class="btn btn-primary btn-sm">{% translate "Topics" %}</a>
+            <a href="{% url 'courses:schedule-list' course.id %}" class="btn btn-secondary btn-sm">{% translate "Schedule" %}</a>
+            <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-secondary btn-sm">{% translate "Calendar" %}</a>
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
 <div class="alert alert-info">
-    <p>No courses yet. Create your first course in the <a href="/admin/" class="link">Admin Panel</a>.</p>
+    <p>{% blocktranslate %}No courses yet. Create your first course in the <a href="/admin/" class="link">Admin Panel</a>.{% endblocktranslate %}</p>
 </div>
 {% endif %}
 
 <div class="mt-4">
-    <a href="/" class="btn btn-secondary">← Back to Home</a>
+    <a href="/" class="btn btn-secondary">← {% translate "Back to Home" %}</a>
 </div>
 {% endblock %}

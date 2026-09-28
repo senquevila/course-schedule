@@ -1,25 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
+{% load i18n %}{% get_current_language as LANGUAGE_CODE %}<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Course Calendar{% endblock %}</title>
+    <title>{% block title %}{% translate "Course Calendar" %}{% endblock %}</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    <link rel="stylesheet" href="/static/css/style.css?v=3">
+    <link rel="stylesheet" href="/static/css/style.css?v=4">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
-            <a href="/" class="navbar-brand">Course Calendar</a>
+            <a href="/" class="navbar-brand">{% translate "Course Calendar" %}</a>
             <ul class="navbar-menu">
-                <li><a href="/">Home</a></li>
-                <li><a href="/courses/">Courses</a></li>
-                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/">{% translate "Home" %}</a></li>
+                <li><a href="/courses/">{% translate "Courses" %}</a></li>
+                <li><a href="/admin/">{% translate "Admin" %}</a></li>
+                <li>
+                    <form action="{% url 'set_language' %}" method="post" class="lang-switch">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button name="language" value="en" title="English" aria-label="English"{% if LANGUAGE_CODE == 'en' %} aria-current="true"{% endif %}>🇺🇸</button>
+                        <button name="language" value="es" title="Español" aria-label="Español"{% if LANGUAGE_CODE == 'es' %} aria-current="true"{% endif %}>🇪🇸</button>
+                    </form>
+                </li>
             </ul>
         </div>
     </nav>
@@ -30,7 +38,7 @@
             {% for message in messages %}
             <div class="alert alert-{{ message.tags }}">
                 {{ message }}
-                <button type="button" class="alert-close" aria-label="Dismiss" onclick="this.parentElement.style.display='none';">×</button>
+                <button type="button" class="alert-close" aria-label="{% translate 'Dismiss' %}" onclick="this.parentElement.style.display='none';">×</button>
             </div>
             {% endfor %}
         </div>
@@ -40,7 +48,7 @@
     </div>
 
     <footer class="footer">
-        <p>&copy; 2026 Course Calendar Application</p>
+        <p>&copy; 2026 {% translate "Course Calendar Application" %}</p>
     </footer>
 
     <!-- Modal for HTMX forms -->

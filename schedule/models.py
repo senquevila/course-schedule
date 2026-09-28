@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils.dates import WEEKDAYS, WEEKDAYS_ABBR
+from django.utils.translation import gettext_lazy as _
 
 
 class CourseSchedule(models.Model):
@@ -23,20 +25,18 @@ class CourseSchedule(models.Model):
 
     def get_days_display(self):
         """Return a human-readable string of the scheduled days"""
-        day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-        return ', '.join([day_names[d] for d in sorted(self.days)])
+        return ', '.join(str(WEEKDAYS[(d - 1) % 7]) for d in sorted(self.days))  # 0=Sunday
 
     def get_days_short(self):
         """Return abbreviated day names"""
-        day_names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-        return ', '.join([day_names[d] for d in sorted(self.days)])
+        return ', '.join(str(WEEKDAYS_ABBR[(d - 1) % 7]) for d in sorted(self.days))  # 0=Sunday
 
 
 class LogStatus(models.TextChoices):
-    NONE = 'none', 'No log'
-    OK = 'ok', 'As scheduled'
-    DELAYED = 'delayed', 'Delayed'
-    MANY = 'many', 'Many logs'
+    NONE = 'none', _('No log')
+    OK = 'ok', _('As scheduled')
+    DELAYED = 'delayed', _('Delayed')
+    MANY = 'many', _('Many logs')
 
     @property
     def style(self):

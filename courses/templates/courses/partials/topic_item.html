@@ -1,3 +1,4 @@
+{% load i18n %}
 <tr id="topic-{{ topic.id }}">
     <td>{{ topic.code }}</td>
     <td>{{ topic.name }}</td>
@@ -6,10 +7,10 @@
     <td>
         {% if topic.materials.count %}
         <a href="{% url 'courses:material-list' topic.course.id topic.id %}">
-            {{ topic.materials.count }} material{{ topic.materials.count|pluralize }}
+            {% blocktranslate count n=topic.materials.count %}{{ n }} material{% plural %}{{ n }} materials{% endblocktranslate %}
         </a>
         {% else %}
-        <span class="text-muted">None</span>
+        <span class="text-muted">{% translate "None" %}</span>
         {% endif %}
     </td>
     <td>
@@ -18,14 +19,14 @@
                     hx-get="{% url 'courses:topic-edit' topic.course.id topic.id %}"
                     hx-target="#modal-body"
                     onclick="openModal()">
-                Edit
+                {% translate "Edit" %}
             </button>
             <button class="action-btn action-delete"
                     hx-delete="{% url 'courses:topic-delete' topic.course.id topic.id %}"
                     hx-target="#topic-{{ topic.id }}"
                     hx-swap="outerHTML swap:1s"
-                    hx-confirm="Are you sure you want to delete this topic?">
-                Delete
+                    hx-confirm="{% translate 'Are you sure you want to delete this topic?' %}">
+                {% translate "Delete" %}
             </button>
         </div>
     </td>

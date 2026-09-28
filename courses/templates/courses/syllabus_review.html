@@ -1,25 +1,26 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load custom_filters %}
 
-{% block title %}Review Topics - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Review Topics" %} - {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
-    <a href="/">Home</a> /
-    <a href="{% url 'courses:topic-list' course.id %}">{{ course.name }} Topics</a> /
-    <span>Review Extracted Topics</span>
+    <a href="/">{% translate "Home" %}</a> /
+    <a href="{% url 'courses:topic-list' course.id %}">{% blocktranslate with name=course.name %}{{ name }} Topics{% endblocktranslate %}</a> /
+    <span>{% translate "Review Extracted Topics" %}</span>
 </div>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Review Extracted Topics</h1>
-        <p class="page-subtitle">Edit the extracted topics before importing them into {{ course.name }}</p>
+        <h1 class="page-title">{% translate "Review Extracted Topics" %}</h1>
+        <p class="page-subtitle">{% blocktranslate with name=course.name %}Edit the extracted topics before importing them into {{ name }}{% endblocktranslate %}</p>
     </div>
 </div>
 
 <div class="review-container">
     <div class="review-info">
-        <p><strong>📊 Found {{ topic_count }} topic(s)</strong> in the document. Review and edit them below before importing.</p>
+        <p><strong>📊 {% blocktranslate count count=topic_count %}Found {{ count }} topic{% plural %}Found {{ count }} topics{% endblocktranslate %}</strong> {% translate "in the document. Review and edit them below before importing." %}</p>
     </div>
 
     <form method="POST" class="review-form">
@@ -38,7 +39,7 @@
 
                         <div class="topic-fields">
                             <div class="field-group">
-                                <label>Code</label>
+                                <label>{% translate "Code" %}</label>
                                 <div class="input-row">
                                     {{ code_field }}
                                 </div>
@@ -48,7 +49,7 @@
                             </div>
 
                             <div class="field-group">
-                                <label>Name *</label>
+                                <label>{% translate "Name" %} *</label>
                                 {{ name_field }}
                                 {% if name_field.errors %}
                                     <div class="form-error">{{ name_field.errors|first }}</div>
@@ -56,7 +57,7 @@
                             </div>
 
                             <div class="field-group">
-                                <label>Description</label>
+                                <label>{% translate "Description" %}</label>
                                 {{ description_field }}
                                 {% if description_field.errors %}
                                     <div class="form-error">{{ description_field.errors|first }}</div>
@@ -64,7 +65,7 @@
                             </div>
 
                             <div class="field-group">
-                                <label>Order</label>
+                                <label>{% translate "Order" %}</label>
                                 {{ order_field }}
                                 {% if order_field.errors %}
                                     <div class="form-error">{{ order_field.errors|first }}</div>
@@ -88,9 +89,9 @@
         <div class="form-actions">
             <button type="submit" class="btn btn-primary btn-lg">
                 <span class="htmx-indicator">...</span>
-                Import Selected Topics
+                {% translate "Import Selected Topics" %}
             </button>
-            <button type="submit" formaction="{% url 'courses:syllabus-cancel' course.id %}" formnovalidate class="btn btn-secondary">Cancel</button>
+            <button type="submit" formaction="{% url 'courses:syllabus-cancel' course.id %}" formnovalidate class="btn btn-secondary">{% translate "Cancel" %}</button>
         </div>
     </form>
 </div>

@@ -1,35 +1,36 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Schedule - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Schedule" %} - {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
-    <a href="/">Home</a> /
+    <a href="/">{% translate "Home" %}</a> /
     <span>{{ course.name }}</span> /
-    <span>Schedule</span>
+    <span>{% translate "Schedule" %}</span>
 </div>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Course Schedule</h1>
+        <h1 class="page-title">{% translate "Course Schedule" %}</h1>
         <p class="page-subtitle">{{ course.name }}</p>
     </div>
     <button class="btn btn-primary"
             hx-get="{% url 'courses:schedule-create' course.id %}"
             hx-target="#modal-body"
             onclick="openModal()">
-        + Add Schedule
+        + {% translate "Add Schedule" %}
     </button>
 </div>
 
 <table{% if not schedules %} style="display: none;"{% endif %}>
     <thead>
         <tr>
-            <th>Day</th>
-            <th>Start Time</th>
-            <th>End Time</th>
-            <th>Duration</th>
-            <th>Actions</th>
+            <th>{% translate "Day" %}</th>
+            <th>{% translate "Start Time" %}</th>
+            <th>{% translate "End Time" %}</th>
+            <th>{% translate "Duration" %}</th>
+            <th>{% translate "Actions" %}</th>
         </tr>
     </thead>
     <tbody id="schedules-table">
@@ -40,22 +41,22 @@
 </table>
 {% if not schedules %}
 <div class="alert alert-info" id="no-schedules-message">
-    <p>No schedules added yet. <button class="btn btn-primary btn-sm"
+    <p>{% translate "No schedules added yet." %} <button class="btn btn-primary btn-sm"
                                        hx-get="{% url 'courses:schedule-create' course.id %}"
                                        hx-target="#modal-body"
                                        onclick="openModal()">
-        Add one now
+        {% translate "Add one now" %}
     </button></p>
 </div>
 {% endif %}
 
 <div class="mt-5">
     <div class="alert alert-info">
-        <strong>Note:</strong> Schedule defines the recurring weekly pattern for this course. You can add multiple schedules for different days and times.
+        <strong>{% translate "Note:" %}</strong> {% translate "Schedule defines the recurring weekly pattern for this course. You can add multiple schedules for different days and times." %}
     </div>
 </div>
 
 <div class="mt-4">
-    <a href="/" class="btn btn-secondary">← Back</a>
+    <a href="/" class="btn btn-secondary">← {% translate "Back" %}</a>
 </div>
 {% endblock %}

@@ -1,18 +1,19 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Logs - {{ course.name }}{% endblock %}
+{% block title %}{% translate "Logs" %} - {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumbs">
-    <a href="/">Home</a> /
+    <a href="/">{% translate "Home" %}</a> /
     <span>{{ course.name }}</span> /
-    <a href="{% url 'courses:calendar-list' course.id %}">Calendar</a> /
-    <span>Logs</span>
+    <a href="{% url 'courses:calendar-list' course.id %}">{% translate "Calendar" %}</a> /
+    <span>{% translate "Logs" %}</span>
 </div>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Session Logs</h1>
+        <h1 class="page-title">{% translate "Session Logs" %}</h1>
         <p class="page-subtitle">{{ course.name }}</p>
     </div>
 </div>
@@ -21,12 +22,12 @@
 <table>
     <thead>
         <tr>
-            <th>Scheduled</th>
-            <th>Topic</th>
-            <th>Actual</th>
-            <th>Problems</th>
-            <th>Solutions</th>
-            <th>Actions</th>
+            <th>{% translate "Scheduled" %}</th>
+            <th>{% translate "Topic" %}</th>
+            <th>{% translate "Actual" %}</th>
+            <th>{% translate "Problems" %}</th>
+            <th>{% translate "Solutions" %}</th>
+            <th>{% translate "Actions" %}</th>
         </tr>
     </thead>
     <tbody>
@@ -42,7 +43,8 @@
                 {{ entry.topic|default:"—" }}{% if not forloop.last %}<br>{% endif %}
                 {% endfor %}
             </td>
-            <td>{{ log.actual_date|date:"D, M j"|default:"As scheduled" }}</td>
+            {% translate "As scheduled" as as_scheduled %}
+            <td>{{ log.actual_date|date:"D, M j"|default:as_scheduled }}</td>
             <td>{{ log.problems|default:"—" }}</td>
             <td>{{ log.solutions|default:"—" }}</td>
             <td>
@@ -51,15 +53,15 @@
                             hx-get="{% url 'courses:calendar-log-edit' course.id log.id %}"
                             hx-target="#modal-body"
                             onclick="openModal()">
-                        Edit
+                        {% translate "Edit" %}
                     </button>
                     <button class="action-btn action-delete"
                             hx-delete="{% url 'courses:calendar-log-delete' course.id log.id %}"
                             hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                             hx-target="#log-{{ log.id }}"
                             hx-swap="outerHTML"
-                            hx-confirm="Delete this log? The calendar will be re-flowed from this session.">
-                        Delete
+                            hx-confirm="{% translate 'Delete this log? The calendar will be re-flowed from this session.' %}">
+                        {% translate "Delete" %}
                     </button>
                 </div>
             </td>
@@ -68,11 +70,11 @@
     </tbody>
 </table>
 {% else %}
-<div class="alert alert-info"><p>No sessions logged yet.</p></div>
+<div class="alert alert-info"><p>{% translate "No sessions logged yet." %}</p></div>
 {% endif %}
 
 <div class="mt-4">
-    <a href="/" class="btn btn-secondary">← Back</a>
-    <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-secondary">Calendar</a>
+    <a href="/" class="btn btn-secondary">← {% translate "Back" %}</a>
+    <a href="{% url 'courses:calendar-list' course.id %}" class="btn btn-secondary">{% translate "Calendar" %}</a>
 </div>
 {% endblock %}
