@@ -40,7 +40,7 @@ class LogStatus(models.TextChoices):
 
     @property
     def style(self):
-        """Inline CSS painting a calendar session; the colors are tokens in style.css (light/dark)"""
+        """Inline CSS painting a calendar session; the colors are tokens in style.css"""
         return f'background: var(--status-{self.value}-bg); color: var(--status-{self.value}-fg);'
 
 

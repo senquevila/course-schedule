@@ -3,15 +3,13 @@
 {% block title %}Home - Course Calendar{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div>
-        <h1 class="page-title">Course Calendar</h1>
-        <p class="page-subtitle">Plan each course's sessions, log how each class actually went, and see where you're running behind.</p>
-    </div>
-    <div class="header-actions">
-        <a href="{% url 'courses:course-list' %}" class="btn btn-primary">View courses</a>
-    </div>
-</div>
+<section class="hero">
+    <p class="hero-label">Course Calendar</p>
+    <h1 class="hero-title">Plan, teach, and track every session</h1>
+    <p class="hero-text">Plan each course's sessions, log how each class actually went, and see where you're running behind.</p>
+    <a href="{% url 'courses:course-list' %}" class="btn btn-accent">View courses</a>
+    <span class="hero-leaf" aria-hidden="true"></span>
+</section>
 
 <dl class="stats">
     <div><dd>{{ courses }}</dd><dt>Courses</dt></div>
