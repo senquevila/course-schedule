@@ -41,10 +41,8 @@ course-schedule/
 │   └── topicDistribution.py     # Topic distribution logic (TODO)
 │
 ├── static/                       # Static files
-│   ├── css/
-│   │   └── style.css            # Custom CSS styling (TODO)
-│   └── js/
-│       └── htmx.min.js          # HTMX library
+│   └── css/
+│       └── style.css            # Custom CSS styling
 │
 ├── templates/                    # Project-level templates
 │   └── base.html                # Base template (TODO)
@@ -108,6 +106,17 @@ course-schedule/
    ```
 
    Server will be available at: `http://localhost:8000/`
+
+### Frontend libraries (HTMX + Alpine.js)
+
+No install step: both are loaded from CDN in `templates/base.html`:
+
+```html
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
+```
+
+To upgrade, bump the version in those tags.
 
 ### Database Options
 
