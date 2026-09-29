@@ -16,8 +16,12 @@
             <td>{{ session.start_time|time:"H:i" }} - {{ session.end_time|time:"H:i" }}</td>
         </tr>
         <tr>
-            <th>{% translate "Topic" %}</th>
+            <th>{% translate "Real topic" %}</th>
             <td>{% translate "Unassigned" as unassigned %}{{ session.topic.name|default:unassigned }}</td>
+        </tr>
+        <tr>
+            <th>{% translate "Ideal topic" %}</th>
+            <td>{{ session.ideal_topic.name|default:"—" }}{% if session.ideal_topic_id != session.topic_id %} <span class="badge badge-pdf">{% translate "Delayed" %}</span>{% endif %}</td>
         </tr>
         <tr>
             <th>{% translate "Course" %}</th>

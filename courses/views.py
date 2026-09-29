@@ -84,7 +84,26 @@ class TopicListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['course'] = get_object_or_404(Course, pk=self.kwargs['course_id'])
+        context.update(_topic_progress(context['course'], timezone.localdate()))
         return context
+
+
+def _topic_progress(course, today):
+    """Where the course is (latest session up to today) vs. where it should be
+    without delays. Topics pushed past the period's last slot by delays have no
+    session left: those are lost."""
+    topics = list(Topic.objects.filter(course=course).order_by('order'))
+    last = CourseCalendar.objects.filter(course=course, session_date__lte=today).select_related(
+        'topic', 'ideal_topic').order_by('-session_date', '-start_time').first()
+    scheduled = set(CourseCalendar.objects.filter(course=course, topic__isnull=False).values_list('topic_id', flat=True))
+    current = last and last.topic
+    ideal = last and last.ideal_topic
+    return {
+        'current_topic': current,
+        'ideal_topic': ideal,
+        'topics_behind': topics.index(ideal) - topics.index(current) if current and ideal else 0,
+        'lost_topics': [t for t in topics if t.id not in scheduled],
+    }
 
 
 class TopicCreateView(View):
@@ -397,6 +416,7 @@ class CourseCalendarListView(TemplateView):
             'current_year': year,
             'current_month': month,
             'log_statuses': LogStatus,
+            'lost_topics': _topic_progress(course, today)['lost_topics'],
         })
         return context
 
@@ -406,7 +426,7 @@ class CourseCalendarSessionDetailView(View):
 
     def get(self, request, course_id, session_id):
         session = get_object_or_404(
-            CourseCalendar.objects.select_related('topic', 'course'),
+            CourseCalendar.objects.select_related('topic', 'ideal_topic', 'course'),
             pk=session_id, course_id=course_id,
         )
         return render(
@@ -434,7 +454,7 @@ class CourseCalendarLogCreateView(View):
 
     def post(self, request, course_id, session_id):
         session = get_object_or_404(
-            CourseCalendar.objects.select_related('topic', 'course'),
+            CourseCalendar.objects.select_related('topic', 'ideal_topic', 'course'),
             pk=session_id, course_id=course_id,
         )
         form = CourseCalendarLogForm(request.POST)
@@ -791,6 +811,20 @@ def _assign_topics(course, after=None):
         if session.topic_id is not None:
             session.topic = None
             session.save(update_fields=['topic'])
+    _assign_ideal_topics(course)
+
+
+def _assign_ideal_topics(course):
+    """Set every session's ideal_topic: the Nth slot of the course gets the Nth topic
+    by order, ignoring logs. Slots are fixed by schedules and non-working days, so
+    delays never change this; only schedule or topic edits do."""
+    topics = list(Topic.objects.filter(course=course).order_by('order'))
+    sessions = CourseCalendar.objects.filter(course=course).order_by('session_date', 'start_time')
+    for i, session in enumerate(sessions):
+        ideal = topics[i] if i < len(topics) else None
+        if session.ideal_topic_id != (ideal and ideal.id):
+            session.ideal_topic = ideal
+            session.save(update_fields=['ideal_topic'])
 
 
 def _regenerate_after(course, after):

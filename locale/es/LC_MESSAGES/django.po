@@ -882,3 +882,22 @@ msgstr "Hoy"
 #: courses/templates/courses/today.html
 msgid "No sessions scheduled for today."
 msgstr "No hay sesiones programadas para hoy."
+
+msgid "Current topic"
+msgstr "Tema actual"
+
+msgid "Ideal topic"
+msgstr "Tema ideal"
+
+msgid "%(n)s topic behind schedule"
+msgid_plural "%(n)s topics behind schedule"
+msgstr[0] "%(n)s tema de atraso"
+msgstr[1] "%(n)s temas de atraso"
+
+msgid "%(n)s topic no longer fits in the calendar because of delays:"
+msgid_plural "%(n)s topics no longer fit in the calendar because of delays:"
+msgstr[0] "%(n)s tema ya no cabe en el calendario por los atrasos:"
+msgstr[1] "%(n)s temas ya no caben en el calendario por los atrasos:"
+
+msgid "Real topic"
+msgstr "Tema real"

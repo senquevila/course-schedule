@@ -28,6 +28,23 @@
     </div>
 </div>
 
+{% if current_topic or ideal_topic %}
+<div class="alert {% if current_topic == ideal_topic %}alert-success{% else %}alert-warning{% endif %}">
+    <p><strong>{% translate "Current topic" %}:</strong> {{ current_topic|default:"—" }}</p>
+    <p><strong>{% translate "Ideal topic" %}:</strong> {{ ideal_topic|default:"—" }}</p>
+    {% if topics_behind > 0 %}
+    <p>{% blocktranslate count n=topics_behind %}{{ n }} topic behind schedule{% plural %}{{ n }} topics behind schedule{% endblocktranslate %}</p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if lost_topics %}
+<div class="alert alert-error">
+    <p>{% blocktranslate count n=lost_topics|length %}{{ n }} topic no longer fits in the calendar because of delays:{% plural %}{{ n }} topics no longer fit in the calendar because of delays:{% endblocktranslate %}
+    {{ lost_topics|join:", " }}</p>
+</div>
+{% endif %}
+
 {% if topics %}
 <table>
     <thead>

@@ -51,7 +51,10 @@ class CourseCalendar(models.Model):
     day_of_week = models.IntegerField()
     start_time = models.TimeField()
     end_time = models.TimeField()
+    # Real topic: what this slot holds after delays re-flow the calendar
     topic = models.ForeignKey('courses.Topic', on_delete=models.SET_NULL, blank=True, null=True, related_name='sessions')
+    # Ideal topic: what this slot would hold with no delays (Nth slot -> Nth topic by order)
+    ideal_topic = models.ForeignKey('courses.Topic', on_delete=models.SET_NULL, blank=True, null=True, related_name='ideal_sessions')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

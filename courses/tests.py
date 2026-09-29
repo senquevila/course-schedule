@@ -457,3 +457,21 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         self.assertFalse(CourseCalendarLog.objects.exists())
         self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})
         self.assertFalse(CourseCalendar.objects.filter(course=self.course, logs__isnull=False).exists())
+
+    def test_topic_progress_and_lost_topics(self):
+        from .views import _topic_progress
+        self.log(12, has_issues='yes', actual_date='2026-09-19')  # T4 pushed off the calendar
+        progress = _topic_progress(self.course, date(2026, 9, 19))
+        self.assertEqual((progress['current_topic'].name, progress['ideal_topic'].name), ('T2', 'T3'))
+        self.assertEqual(progress['topics_behind'], 1)
+        self.assertEqual([t.name for t in progress['lost_topics']], ['T4'])
+        response = self.client.get(reverse('courses:topic-list', args=[self.course.id]))
+        self.assertContains(response, 'T4')
+
+    def test_session_ideal_topic(self):
+        from schedule.models import CourseCalendar
+        self.log(12, has_issues='yes', actual_date='2026-09-19')
+        session = CourseCalendar.objects.get(course=self.course, session_date=date(2026, 9, 26))
+        self.assertEqual((session.topic.name, session.ideal_topic.name), ('T3', 'T4'))
+        url = reverse('courses:calendar-session-detail', args=[self.course.id, session.id])
+        self.assertContains(self.client.get(url), 'T4')

@@ -24,6 +24,13 @@
     </form>
 </div>
 
+{% if lost_topics %}
+<div class="alert alert-error">
+    <p>{% blocktranslate count n=lost_topics|length %}{{ n }} topic no longer fits in the calendar because of delays:{% plural %}{{ n }} topics no longer fit in the calendar because of delays:{% endblocktranslate %}
+    {{ lost_topics|join:", " }}</p>
+</div>
+{% endif %}
+
 {% include "courses/partials/calendar_grid.html" %}
 
 <div class="mt-4">
