@@ -51,13 +51,21 @@
                     {% if day != 0 %}
                     <div class="calendar-day-number">{{ day }}</div>
                     {% for session in day_sessions %}
-                    <div class="calendar-session" style="{{ session.log_status.style }}" title="{{ session.log_status.label }}"
+                    {% if session.is_delay %}
+                    <div class="calendar-delay-line" role="button" title="{% translate 'Delayed' %}: {{ session.topic.name }}"
+                         aria-label="{% translate 'Delayed' %}: {{ session.topic.name }}"
+                         hx-get="{% url 'courses:calendar-session-detail' course.id session.id %}"
+                         hx-target="#modal-body"
+                         onclick="openModal()"></div>
+                    {% else %}
+                    <div class="calendar-session{% if not session.topic %} calendar-session-empty{% endif %}" style="{{ session.log_status.style }}" title="{{ session.log_status.label }}"
                          hx-get="{% url 'courses:calendar-session-detail' course.id session.id %}"
                          hx-target="#modal-body"
                          onclick="openModal()">
                         <span class="calendar-session-time">{{ session.start_time|time:"H:i" }}</span>
                         <span class="calendar-session-topic">{{ session.topic.name|default:unassigned }}</span>
                     </div>
+                    {% endif %}
                     {% endfor %}
                     {% endif %}
                 </td>

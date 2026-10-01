@@ -390,8 +390,12 @@ class CourseCalendarListView(TemplateView):
         sessions = CourseCalendar.objects.filter(
             course=course, session_date__year=year, session_date__month=month
         ).select_related('topic').prefetch_related('logs').order_by('start_time')
+        # A delay repeats its topic on later slots: only the first one shows it
+        first_session_by_topic = dict(CourseCalendar.objects.filter(course=course, topic__isnull=False)
+                                      .order_by('-session_date', '-start_time').values_list('topic_id', 'id'))
         sessions_by_day = {}
         for session in sessions:
+            session.is_delay = bool(session.topic_id) and first_session_by_topic[session.topic_id] != session.id
             sessions_by_day.setdefault(session.session_date.day, []).append(session)
 
         cal = calendar.Calendar(firstweekday=6)  # Sunday first, matches day_of_week convention

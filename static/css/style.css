@@ -910,6 +910,25 @@ tbody tr:hover td { background: var(--mint); }
     text-overflow: ellipsis;
 }
 
+.calendar-delay-line {
+    /* bleed into the cell padding so the line crosses the whole day */
+    margin: 0.625rem -0.375rem;
+    height: 3px;
+    background: var(--danger);
+    cursor: pointer;
+}
+
+.calendar-delay-line:hover { height: 5px; margin-block: 0.5625rem; }
+
+.calendar-session-empty {
+    background: transparent !important;
+    box-shadow: none;
+    outline: 1px dashed currentColor;
+    outline-offset: -1px;
+    font-style: italic;
+    opacity: 0.7;
+}
+
 .log-entry {
     padding: 0.75rem 0;
     border-bottom: 1px solid var(--rule);
