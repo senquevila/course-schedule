@@ -5,8 +5,12 @@
     <h3>{{ session.session_date }}</h3>
     <button type="button" class="modal-close" onclick="closeModal()">×</button>
 </div>
-<div class="modal-body">
+<div class="modal-body modal-scroll">
     <table class="detail-table">
+        <tr>
+            <th>{% translate "Course" %}</th>
+            <td>{{ session.course }}</td>
+        </tr>
         <tr>
             <th>{% translate "Day" %}</th>
             <td>{{ session.session_date|date:"l" }}</td>
@@ -23,11 +27,16 @@
             <th>{% translate "Ideal topic" %}</th>
             <td>{{ session.ideal_topic.name|default:"—" }}{% if session.ideal_topic_id != session.topic_id %} <span class="badge badge-pdf">{% translate "Delayed" %}</span>{% endif %}</td>
         </tr>
-        <tr>
-            <th>{% translate "Course" %}</th>
-            <td>{{ session.course }}</td>
-        </tr>
     </table>
+
+    {% with materials=session.topic.materials.all %}
+    {% if materials %}
+    <h4 class="mt-3">{% translate "Materials" %}</h4>
+    {% for material in materials %}
+    <div class="material-entry">{% if material.material_type == "url" %}<a href="{{ material.url_or_path }}" target="_blank" rel="noopener noreferrer">{{ material.name }}</a>{% else %}{{ material.name }}{% endif %}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
 
     {% with logs=session.logs.all %}
     {% if logs %}

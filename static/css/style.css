@@ -540,6 +540,12 @@ input[type="radio"] {
     box-shadow: 0 24px 48px -12px rgba(8, 59, 59, 0.35);
 }
 
+/* Long modal bodies (e.g. calendar detail) scroll inside the window, header stays put */
+.modal-scroll {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -941,6 +947,18 @@ tbody tr.log-row:hover td { background: var(--mint); }
     background: var(--mint);
     border-radius: var(--radius-sm);
     border-bottom: 1px solid var(--rule);
+    font-size: 0.9375rem;
+}
+
+/* Logs are records (filled mint); materials are references to consult:
+   outlined on the modal's white with a sage spine, so the two never read as the same thing */
+.material-entry {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--sage);
+    border-radius: var(--radius-sm);
     font-size: 0.9375rem;
 }
 
