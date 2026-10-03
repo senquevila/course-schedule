@@ -32,7 +32,7 @@
     </thead>
     <tbody>
         {% for log in logs %}
-        <tr id="log-{{ log.id }}">
+        <tr id="log-{{ log.id }}" class="log-row">
             <td>
                 {% for entry in log.calendar_entries.all %}
                 {{ entry.session_date|date:"D, M j" }} {{ entry.start_time|time:"H:i" }}{% if not forloop.last %}<br>{% endif %}
@@ -44,7 +44,10 @@
                 {% endfor %}
             </td>
             {% translate "As scheduled" as as_scheduled %}
-            <td>{{ log.actual_date|date:"D, M j"|default:as_scheduled }}</td>
+            <td>
+                {{ log.actual_date|date:"D, M j"|default:as_scheduled }}
+                <span class="badge badge-{{ log.status }}">{% if log.status == 'early' %}{% translate "Ahead" %}{% elif log.status == 'late' %}{% translate "Behind" %}{% else %}{% translate "On time" %}{% endif %}</span>
+            </td>
             <td>{{ log.problems|default:"—" }}</td>
             <td>{{ log.solutions|default:"—" }}</td>
             <td>

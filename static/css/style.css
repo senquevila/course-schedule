@@ -640,6 +640,12 @@ tbody tr:hover td { background: var(--mint); }
 .badge-video    { background: var(--lime);              color: var(--forest); }
 .badge-document { background: var(--sage);              color: var(--forest); }
 .badge-image    { background: var(--status-none-bg);    color: var(--ink-soft); }
+.badge-early    { background: #fff;    color: var(--ink); border: 1px solid var(--rule); }
+.badge-on-time  { background: #9aa5a5; color: #fff; }
+.badge-late     { background: #111;    color: #fff; }
+
+.log-row td,
+tbody tr.log-row:hover td { background: var(--mint); }
 
 /* ==================== Loading ==================== */
 
@@ -930,7 +936,10 @@ tbody tr:hover td { background: var(--mint); }
 }
 
 .log-entry {
-    padding: 0.75rem 0;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: var(--mint);
+    border-radius: var(--radius-sm);
     border-bottom: 1px solid var(--rule);
     font-size: 0.9375rem;
 }

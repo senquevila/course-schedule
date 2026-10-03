@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.contrib import messages
 from django.urls import reverse, reverse_lazy
 from django.db import IntegrityError, transaction
-from django.db.models import Max
+from django.db.models import F, Max
 from django.utils import timezone
 
 import calendar
@@ -484,14 +484,25 @@ def _save_log(form, session):
         log.problems = log.solutions = ''
     log.save()
     log.calendar_entries.add(session)
-    if log.actual_date and log.actual_date > session.session_date:
-        # Delayed onto a regular class slot: that slot becomes the makeup for this topic
-        CourseCalendar.objects.filter(
-            course=session.course, session_date=log.actual_date,
-            start_time=session.start_time, logs__isnull=True,
-        ).update(topic=session.topic)
-    _regenerate_after(session.course, log.actual_date or session.session_date)
+    # The re-flow replays every delay after this date, this log's included
+    _regenerate_after(session.course, min(log.actual_date or session.session_date, session.session_date))
     return log
+
+
+def _replay_delays(course, after=None):
+    """Re-apply every logged delay landing after `after` (all, if None), oldest session
+    first: the makeup slot takes the delayed topic and the rest re-flow after it. Without
+    this, any re-flow would drop earlier delays back to the ideal topics."""
+    sessions = (CourseCalendar.objects.filter(course=course, logs__actual_date__gt=F('session_date')).distinct()
+                .select_related('topic').prefetch_related('logs').order_by('session_date', 'start_time'))
+    for session in sessions:
+        for log in sorted(session.logs.all(), key=lambda log: log.created_at):
+            if log.actual_date and log.actual_date > session.session_date and (not after or log.actual_date > after):
+                CourseCalendar.objects.filter(
+                    course=course, session_date=log.actual_date,
+                    start_time=session.start_time, logs__isnull=True,
+                ).update(topic=session.topic)
+                _rebuild_after(course, log.actual_date)
 
 
 def _course_log_or_404(course_id, log_id):
@@ -513,11 +524,13 @@ class CourseCalendarLogListView(TemplateView):
         course = get_object_or_404(Course, pk=self.kwargs['course_id'])
         logs = (CourseCalendarLog.objects.filter(calendar_entries__course=course).distinct()
                 .prefetch_related('calendar_entries__topic'))
-        context.update({
-            'course': course,
-            'logs': sorted(logs, key=lambda log: min(
-                (e.session_date, e.start_time) for e in log.calendar_entries.all())),
-        })
+        logs = sorted(logs, key=lambda log: min(
+            (e.session_date, e.start_time) for e in log.calendar_entries.all()))
+        for log in logs:
+            scheduled = min(e.session_date for e in log.calendar_entries.all())
+            actual = log.actual_date or scheduled
+            log.status = 'early' if actual < scheduled else 'late' if actual > scheduled else 'on-time'
+        context.update({'course': course, 'logs': logs})
         return context
 
 
@@ -544,8 +557,7 @@ class CourseCalendarLogUpdateView(View):
         if not form.is_valid():
             return self._render_form(request, log, session, form)
         with transaction.atomic():
-            # Undo the old delay's effect first, then apply the edited log like a new one
-            _regenerate_after(session.course, session.session_date)
+            # Re-flowing from the session undoes the old delay's effect
             _save_log(form, session)
         return HttpResponse(headers={'HX-Refresh': 'true'})
 
@@ -832,6 +844,12 @@ def _assign_ideal_topics(course):
 
 
 def _regenerate_after(course, after):
+    """Rebuild after `after`, then re-apply the logged delays landing past it."""
+    _rebuild_after(course, after)
+    _replay_delays(course, after)
+
+
+def _rebuild_after(course, after):
     """Rebuild every schedule's unlogged sessions after `after` and re-flow the remaining topics onto them."""
     period = course.period
     non_working_days = set(NonWorkingDay.objects.filter(
@@ -855,6 +873,7 @@ class CourseCalendarGenerateView(View):
 
         created_count = _generate_calendar_sessions(course, schedule, non_working_days)
         _assign_topics(course)
+        _replay_delays(course)
 
         messages.success(request, ngettext('%(count)d calendar session generated.', '%(count)d calendar sessions generated.', created_count) % {'count': created_count})
         return redirect('courses:schedule-list', course_id=course.id)
@@ -874,6 +893,7 @@ class CourseCalendarGenerateAllView(View):
             for schedule in course.schedules.all()
         )
         _assign_topics(course)
+        _replay_delays(course)
 
         messages.success(request, ngettext('%(count)d calendar session generated.', '%(count)d calendar sessions generated.', created_count) % {'count': created_count})
         return redirect('courses:calendar-list', course_id=course.id)

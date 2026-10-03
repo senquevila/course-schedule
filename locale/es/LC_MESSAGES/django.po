@@ -857,7 +857,7 @@ msgstr "Sin registro"
 
 #: schedule/models.py:38
 msgid "Delayed"
-msgstr "Retrasada"
+msgstr "Atrasada"
 
 #: schedule/models.py:39
 msgid "Many logs"
@@ -901,3 +901,12 @@ msgstr[1] "%(n)s temas ya no caben en el calendario por los atrasos:"
 
 msgid "Real topic"
 msgstr "Tema real"
+
+msgid "Ahead"
+msgstr "Adelantado"
+
+msgid "On time"
+msgstr "Al día"
+
+msgid "Behind"
+msgstr "Atrasado"

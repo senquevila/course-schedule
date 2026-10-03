@@ -34,7 +34,12 @@
     <h4 class="mt-3">{% translate "Logs" %}</h4>
     {% for log in logs %}
     <div class="log-entry">
-        <div class="log-entry-date">{{ log.actual_date|default:session.session_date|date:"Y-m-d" }}</div>
+        <div class="log-entry-date">
+            {{ log.actual_date|default:session.session_date|date:"Y-m-d" }}
+            {% if log.actual_date and log.actual_date < session.session_date %}<span class="badge badge-early">{% translate "Ahead" %}</span>
+            {% elif log.actual_date and log.actual_date > session.session_date %}<span class="badge badge-late">{% translate "Behind" %}</span>
+            {% else %}<span class="badge badge-on-time">{% translate "On time" %}</span>{% endif %}
+        </div>
         <div><strong>{% translate "Problem:" %}</strong> {{ log.problems|default:"—" }}</div>
         <div><strong>{% translate "Solution:" %}</strong> {{ log.solutions|default:"—" }}</div>
     </div>
