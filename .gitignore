@@ -58,3 +58,5 @@ secrets/
 # IA
 _context/
 .claude/
+
+pdf/
