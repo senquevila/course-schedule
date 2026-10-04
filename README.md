@@ -171,9 +171,8 @@ Development workflow:
 
 ## License
 
-[Add your license here]
+MIT — see [LICENSE](LICENSE).
 
 ## Contact
 
-Project by: senquevila
-Repository: ~/Documents/GitHub/senquevila/course-schedule
+Project by: [Jose Enrique Avila](https://www.linkedin.com/in/senquevila/)
