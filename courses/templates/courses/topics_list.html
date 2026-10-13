@@ -39,14 +39,7 @@
 {% endif %}
 
 {% if lost_topics %}
-<details class="lost-topics mb-4">
-    <summary class="badge badge-lost">
-        {% blocktranslate count n=lost_topics|length %}{{ n }} topic no longer fits in the calendar because of delays{% plural %}{{ n }} topics no longer fit in the calendar because of delays{% endblocktranslate %}
-    </summary>
-    <ul class="alert alert-error">
-        {% for topic in lost_topics %}<li>{{ topic }}</li>{% endfor %}
-    </ul>
-</details>
+{% include "courses/partials/lost_topics.html" %}
 {% endif %}
 
 {% if topics %}

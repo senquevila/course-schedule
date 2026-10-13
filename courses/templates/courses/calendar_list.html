@@ -25,10 +25,7 @@
 </div>
 
 {% if lost_topics %}
-<div class="alert alert-error">
-    <p>{% blocktranslate count n=lost_topics|length %}{{ n }} topic no longer fits in the calendar because of delays:{% plural %}{{ n }} topics no longer fit in the calendar because of delays:{% endblocktranslate %}
-    {{ lost_topics|join:", " }}</p>
-</div>
+{% include "courses/partials/lost_topics.html" %}
 {% endif %}
 
 {% include "courses/partials/calendar_grid.html" %}
