@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.contrib import messages
 from django.urls import reverse, reverse_lazy
 from django.db import IntegrityError, transaction
-from django.db.models import F, Max
+from django.db.models import Exists, F, Max, OuterRef
 from django.utils import timezone
 
 import calendar
@@ -139,6 +139,7 @@ class TopicCreateView(View):
             topic = form.save(commit=False)
             topic.course = course
             topic.save()
+            _reflow_topics(course)
             messages.success(request, _('Topic "%(name)s" created successfully.') % {'name': topic.name})
 
             # Return the new topic row
@@ -189,6 +190,7 @@ class TopicUpdateView(View):
 
         if form.is_valid():
             topic = form.save()
+            _reflow_topics(course)
             messages.success(request, _('Topic "%(name)s" updated successfully.') % {'name': topic.name})
 
             # Return the updated topic row
@@ -221,9 +223,39 @@ class TopicDeleteView(View):
         topic = get_object_or_404(Topic, pk=topic_id, course=course)
         topic_name = topic.name
         topic.delete()
+        _reflow_topics(course)
 
         messages.success(request, _('Topic "%(name)s" deleted successfully.') % {'name': topic_name})
         return HttpResponse(status=200)
+
+
+class TopicMoveView(View):
+    """Move a topic to a new position; topics from that position on shift down"""
+
+    def get(self, request, course_id, topic_id):
+        """Return the reorder modal"""
+        course = get_object_or_404(Course, pk=course_id)
+        topic = get_object_or_404(Topic, pk=topic_id, course=course)
+        # ponytail: no max on the input, positions past the end are clamped on save
+        return render(request, 'courses/partials/topic_move_form.html', {'course': course, 'topic': topic})
+
+    def post(self, request, course_id, topic_id):
+        course = get_object_or_404(Course, pk=course_id)
+        topic = get_object_or_404(Topic, pk=topic_id, course=course)
+        topics = [t for t in Topic.objects.filter(course=course).order_by('order') if t.pk != topic.pk]
+        try:
+            position = min(max(int(request.POST['order']), 1), len(topics) + 1)
+        except (KeyError, ValueError):
+            return redirect('courses:topic-list', course_id=course.id)
+        topics.insert(position - 1, topic)
+        with transaction.atomic():
+            # Two passes so unique (course, order) never collides mid-update
+            Topic.objects.filter(course=course).update(order=-F('order'))
+            for i, t in enumerate(topics, 1):
+                Topic.objects.filter(pk=t.pk).update(order=i)
+            _reflow_topics(course)
+        messages.success(request, _('Topic "%(name)s" moved to position %(order)s.') % {'name': topic.name, 'order': position})
+        return redirect('courses:topic-list', course_id=course.id)
 
 
 # ==================== MATERIAL VIEWS ====================
@@ -807,7 +839,7 @@ def _generate_calendar_sessions(course, schedule, non_working_days, after=None):
     return created_count
 
 
-def _assign_topics(course, after=None):
+def _assign_topics(course, after=None, keep_logged=False):
     """Assign topics in order across the course's unlogged sessions (only those
     dated after `after`, if given), one topic per hourly session slot.
     Topics already held by the sessions left alone are skipped."""
@@ -827,20 +859,33 @@ def _assign_topics(course, after=None):
         if session.topic_id is not None:
             session.topic = None
             session.save(update_fields=['topic'])
-    _assign_ideal_topics(course)
+    _assign_ideal_topics(course, keep_logged)
 
 
-def _assign_ideal_topics(course):
+def _assign_ideal_topics(course, keep_logged=False):
     """Set every session's ideal_topic: the Nth slot of the course gets the Nth topic
     by order, ignoring logs. Slots are fixed by schedules and non-working days, so
-    delays never change this; only schedule or topic edits do."""
+    delays never change this; only schedule or topic edits do. With `keep_logged`,
+    logged sessions keep the ideal topic they had."""
     topics = list(Topic.objects.filter(course=course).order_by('order'))
-    sessions = CourseCalendar.objects.filter(course=course).order_by('session_date', 'start_time')
+    sessions = CourseCalendar.objects.filter(course=course).annotate(
+        has_logs=Exists(CourseCalendarLog.objects.filter(calendar_entries=OuterRef('pk')))
+    ).order_by('session_date', 'start_time')
     for i, session in enumerate(sessions):
         ideal = topics[i] if i < len(topics) else None
+        if keep_logged and session.has_logs:
+            continue
         if session.ideal_topic_id != (ideal and ideal.id):
             session.ideal_topic = ideal
             session.save(update_fields=['ideal_topic'])
+
+
+def _reflow_topics(course):
+    """Re-flow the calendar after topics change: unlogged sessions take the topics in
+    their new order, ideal topics follow, and logged delays are re-applied.
+    Logged sessions are left exactly as they are."""
+    _assign_topics(course, keep_logged=True)
+    _replay_delays(course)
 
 
 def _regenerate_after(course, after):
@@ -1058,6 +1103,7 @@ class SyllabusReviewView(View):
                             order=topic_data['order']
                         )
                 created_count = len(reviewed_topics)
+                _reflow_topics(course)
 
                 # Review is one-shot: drop the drafts now that they're either imported or skipped
                 SyllabusDraftTopic.objects.filter(course=course).delete()

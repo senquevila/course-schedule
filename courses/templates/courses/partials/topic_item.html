@@ -15,6 +15,12 @@
     </td>
     <td>
         <div class="actions">
+            <button class="action-btn"
+                    hx-get="{% url 'courses:topic-move' topic.course.id topic.id %}"
+                    hx-target="#modal-body"
+                    onclick="openModal()">
+                {% translate "Reorder" %}
+            </button>
             <button class="action-btn action-edit"
                     hx-get="{% url 'courses:topic-edit' topic.course.id topic.id %}"
                     hx-target="#modal-body"

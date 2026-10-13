@@ -18,6 +18,7 @@ htmx_patterns = [
     path('courses/<int:course_id>/topics/', views.TopicListView.as_view(), name='topic-list'),
     path('courses/<int:course_id>/topics/create/', views.TopicCreateView.as_view(), name='topic-create'),
     path('courses/<int:course_id>/topics/<int:topic_id>/edit/', views.TopicUpdateView.as_view(), name='topic-edit'),
+    path('courses/<int:course_id>/topics/<int:topic_id>/move/', views.TopicMoveView.as_view(), name='topic-move'),
     path('courses/<int:course_id>/topics/<int:topic_id>/delete/', views.TopicDeleteView.as_view(), name='topic-delete'),
 
     # Materials

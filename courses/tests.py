@@ -491,3 +491,49 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         self.assertEqual((session.topic.name, session.ideal_topic.name), ('T3', 'T4'))
         url = reverse('courses:calendar-session-detail', args=[self.course.id, session.id])
         self.assertContains(self.client.get(url), 'T4')
+
+
+class TopicMoveViewTestCase(TestCase):
+    def setUp(self):
+        period = Period.objects.create(name='P', start_date=date(2026, 1, 1), end_date=date(2026, 12, 31))
+        assignature = Assignature.objects.create(code='CS101', name='Test', uv=4)
+        self.course = Course.objects.create(assignature=assignature, name='Test', period=period,
+                                            instructor_name='Test', location='Test')
+        self.topics = [Topic.objects.create(course=self.course, code=f'T{i}', name=f'T{i}', order=i) for i in range(1, 6)]
+
+    def move(self, topic, order):
+        self.client.post(reverse('courses:topic-move', args=[self.course.id, topic.id]), {'order': order})
+        return [(t.name, t.order) for t in Topic.objects.filter(course=self.course).order_by('order')]
+
+    def test_reorder_modal(self):
+        url = reverse('courses:topic-move', args=[self.course.id, self.topics[1].id])
+        self.assertContains(self.client.get(url), 'name="order"')
+
+    def test_move_up_shifts_following_topics(self):
+        self.assertEqual(self.move(self.topics[4], 2), [('T1', 1), ('T5', 2), ('T2', 3), ('T3', 4), ('T4', 5)])
+
+    def test_move_down_and_clamp(self):
+        self.assertEqual(self.move(self.topics[0], 99), [('T2', 1), ('T3', 2), ('T4', 3), ('T5', 4), ('T1', 5)])
+
+    def test_move_reflows_calendar(self):
+        from schedule.models import CourseCalendar
+        for day in (1, 2):
+            CourseCalendar.objects.create(course=self.course, session_date=date(2026, 9, day), day_of_week=0,
+                                          start_time='08:00', end_time='09:00', topic=self.topics[day - 1])
+        self.move(self.topics[2], 1)
+        sessions = CourseCalendar.objects.filter(course=self.course).order_by('session_date')
+        self.assertEqual([(s.topic.name, s.ideal_topic.name) for s in sessions], [('T3', 'T3'), ('T1', 'T1')])
+
+    def test_move_with_logs_only_reflows_unlogged_sessions(self):
+        from schedule.models import CourseCalendar
+        for day in (1, 2, 3):
+            CourseCalendar.objects.create(course=self.course, session_date=date(2026, 9, day), day_of_week=0,
+                                          start_time='08:00', end_time='09:00',
+                                          topic=self.topics[day - 1], ideal_topic=self.topics[day - 1])
+        logged = CourseCalendar.objects.get(session_date=date(2026, 9, 1))
+        CourseCalendarLog.objects.create().calendar_entries.add(logged)
+        self.move(self.topics[4], 1)
+        sessions = CourseCalendar.objects.filter(course=self.course).order_by('session_date')
+        # Logged session keeps T1 as topic and ideal; the rest take the new order, skipping T1
+        self.assertEqual([(s.topic.name, s.ideal_topic.name) for s in sessions],
+                         [('T1', 'T1'), ('T5', 'T1'), ('T2', 'T2')])

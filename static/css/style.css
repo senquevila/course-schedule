@@ -641,6 +641,8 @@ tbody tr:hover td { background: var(--mint); }
     color: var(--teal);
 }
 
+.badge-lost     { background: var(--status-delayed-bg); color: var(--danger); border-radius: 999px; cursor: pointer; }
+.lost-topics ul { margin-top: 8px; padding-left: 32px; }
 .badge-pdf      { background: var(--status-delayed-bg); color: var(--danger); }
 .badge-url      { background: var(--mint);              color: var(--teal); }
 .badge-video    { background: var(--lime);              color: var(--forest); }

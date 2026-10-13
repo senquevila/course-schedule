@@ -1,0 +1,21 @@
+{% load i18n %}
+<div class="modal-header">
+    <h2 class="modal-title">{% translate "Reorder Topic" %}</h2>
+    <button class="modal-close" onclick="closeModal()">×</button>
+</div>
+
+<form method="POST" action="{% url 'courses:topic-move' course.id topic.id %}">
+    {% csrf_token %}
+    <p>{{ topic }}</p>
+
+    <div class="form-group">
+        <label for="move-order">{% translate "New position" %}</label>
+        <input type="number" id="move-order" name="order" class="form-input"
+               min="1" value="{{ topic.order }}" required autofocus>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">{% translate "Cancel" %}</button>
+        <button type="submit" class="btn btn-primary">{% translate "Reorder" %}</button>
+    </div>
+</form>
