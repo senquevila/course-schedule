@@ -266,7 +266,8 @@ class TopicMoveView(View):
             # Two passes so unique (course, order) never collides mid-update
             Topic.objects.filter(course=course).update(order=-F("order"))
             for i, t in enumerate(topics, 1):
-                Topic.objects.filter(pk=t.pk).update(order=i)
+                t.order = i
+            Topic.objects.bulk_update(topics, ["order"])
             _reflow_topics(course)
         messages.success(
             request, _('Topic "%(name)s" moved to position %(order)s.') % {"name": topic.name, "order": position}
@@ -889,18 +890,28 @@ def _generate_calendar_sessions(course, schedule, non_working_days, after=None):
         stale = stale.filter(session_date__gt=after)
     stale.delete()
 
-    created_count = 0
+    taken = set(
+        CourseCalendar.objects.filter(course=course).exclude(EARLY_LOGGED).values_list("session_date", "start_time")
+    )
+    new_sessions = []
     current = max(period.start_date, after + timedelta(days=1)) if after else period.start_date
     while current <= period.end_date:
         day_of_week = (current.weekday() + 1) % 7  # model: 0=Sunday..6=Saturday
         if day_of_week in schedule.days and current not in non_working_days:
             for hour in range(schedule.start_time.hour, schedule.end_time.hour):
-                slot = dict(course=course, session_date=current, start_time=time(hour, 0))
-                if not CourseCalendar.objects.filter(**slot).exclude(EARLY_LOGGED).exists():
-                    CourseCalendar.objects.create(**slot, day_of_week=day_of_week, end_time=time(hour + 1, 0))
-                    created_count += 1
+                if (current, time(hour, 0)) not in taken:
+                    new_sessions.append(
+                        CourseCalendar(
+                            course=course,
+                            session_date=current,
+                            day_of_week=day_of_week,
+                            start_time=time(hour, 0),
+                            end_time=time(hour + 1, 0),
+                        )
+                    )
         current += timedelta(days=1)
-    return created_count
+    CourseCalendar.objects.bulk_create(new_sessions)
+    return len(new_sessions)
 
 
 def _assign_topics(course, after=None, keep_logged=False):
@@ -917,14 +928,13 @@ def _assign_topics(course, after=None, keep_logged=False):
         .values("topic_id")
     )
     topics = list(Topic.objects.filter(course=course).exclude(pk__in=kept_topic_ids).order_by("order"))
-    for session, topic in zip(sessions, topics):
-        if session.topic_id != topic.id:
+    changed = []
+    for i, session in enumerate(sessions):
+        topic = topics[i] if i < len(topics) else None
+        if session.topic_id != (topic and topic.id):
             session.topic = topic
-            session.save(update_fields=["topic"])
-    for session in sessions[len(topics) :]:
-        if session.topic_id is not None:
-            session.topic = None
-            session.save(update_fields=["topic"])
+            changed.append(session)
+    CourseCalendar.objects.bulk_update(changed, ["topic"])
     _assign_ideal_topics(course, keep_logged)
 
 
@@ -940,13 +950,15 @@ def _assign_ideal_topics(course, keep_logged=False):
         .annotate(has_logs=Exists(CourseCalendarLog.objects.filter(calendar_entries=OuterRef("pk"))))
         .order_by("session_date", "start_time")
     )
+    changed = []
     for i, session in enumerate(sessions):
         ideal = topics[i] if i < len(topics) else None
         if keep_logged and session.has_logs:
             continue
         if session.ideal_topic_id != (ideal and ideal.id):
             session.ideal_topic = ideal
-            session.save(update_fields=["ideal_topic"])
+            changed.append(session)
+    CourseCalendar.objects.bulk_update(changed, ["ideal_topic"])
 
 
 def _reflow_topics(course):
@@ -1171,14 +1183,16 @@ class SyllabusReviewView(View):
             # Create topics (all-or-nothing so a duplicate order doesn't leave a partial import)
             try:
                 with transaction.atomic():
-                    for topic_data in reviewed_topics:
-                        Topic.objects.create(
+                    Topic.objects.bulk_create(
+                        Topic(
                             course=course,
                             code=topic_data["code"],
                             name=topic_data["name"],
                             description=topic_data["description"],
                             order=topic_data["order"],
                         )
+                        for topic_data in reviewed_topics
+                    )
                 created_count = len(reviewed_topics)
                 _reflow_topics(course)
 
