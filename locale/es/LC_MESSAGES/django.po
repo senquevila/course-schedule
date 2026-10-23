@@ -913,3 +913,16 @@ msgstr "Atrasado"
 
 msgid "Also in this hour"
 msgstr "También en esta hora"
+
+msgid "Date"
+msgstr "Fecha"
+
+#, python-format
+msgid "%(day)s from %(start)s to %(end)s"
+msgstr "%(day)s de %(start)s a %(end)s"
+
+msgid "Problem"
+msgstr "Problema"
+
+msgid "Solution"
+msgstr "Solución"

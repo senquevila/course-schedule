@@ -8,29 +8,21 @@
 <div class="modal-body modal-scroll">
     <table class="detail-table">
         <tr>
-            <th>{% translate "Course" %}</th>
-            <td>{{ session.course }}</td>
-        </tr>
-        <tr>
-            <th>{% translate "Day" %}</th>
-            <td>{{ session.session_date|date:"l" }}</td>
-        </tr>
-        <tr>
-            <th>{% translate "Time" %}</th>
-            <td>{{ session.start_time|time:"H:i" }} - {{ session.end_time|time:"H:i" }}</td>
-        </tr>
-        <tr>
             <th>{% translate "Real topic" %}</th>
-            <td>{% translate "Unassigned" as unassigned %}{{ session.topic.name|default:unassigned }}</td>
+            <td><strong>{% translate "Unassigned" as unassigned %}{{ session.topic.name|default:unassigned }}</strong></td>
         </tr>
         <tr>
+            <th>{% translate "Date" %}</th>
+            <td>{% blocktranslate with day=session.session_date|date:"l"|capfirst start=session.start_time|time:"H:i" end=session.end_time|time:"H:i" %}{{ day }} from {{ start }} to {{ end }}{% endblocktranslate %}</td>
+        </tr>
+        <tr class="detail-row-minor">
             <th>{% translate "Ideal topic" %}</th>
             <td>{{ session.ideal_topic.name|default:"—" }}{% if session.ideal_topic_id != session.topic_id %} <span class="badge badge-pdf">{% translate "Delayed" %}</span>{% endif %}</td>
         </tr>
     </table>
 
     {% if others %}
-    <h4 class="mt-3">{% translate "Also in this hour" %}</h4>
+    <h4 class="mt-3 section-label">{% translate "Also in this hour" %}</h4>
     {% for other in others %}
     <div class="material-entry"><a href="#" hx-get="{% url 'courses:calendar-session-detail' other.course_id other.id %}" hx-target="#modal-body">{{ other.topic.name|default:"—" }}</a></div>
     {% endfor %}
@@ -38,7 +30,7 @@
 
     {% with materials=session.topic.materials.all %}
     {% if materials %}
-    <h4 class="mt-3">{% translate "Materials" %}</h4>
+    <h4 class="mt-3 section-label">{% translate "Materials" %}</h4>
     {% for material in materials %}
     <div class="material-entry">{% if material.material_type == "url" %}<a href="{{ material.url_or_path }}" target="_blank" rel="noopener noreferrer">{{ material.name }}</a>{% else %}{{ material.name }}{% endif %}</div>
     {% endfor %}
@@ -47,7 +39,7 @@
 
     {% with logs=session.logs.all %}
     {% if logs %}
-    <h4 class="mt-3">{% translate "Logs" %}</h4>
+    <h4 class="mt-3 section-label">{% translate "Logs" %} <span class="badge">{{ logs|length }}</span></h4>
     {% for log in logs %}
     <div class="log-entry">
         <div class="log-entry-date">
@@ -56,8 +48,8 @@
             {% elif log.actual_date and log.actual_date > session.session_date %}<span class="badge badge-late">{% translate "Behind" %}</span>
             {% else %}<span class="badge badge-on-time">{% translate "On time" %}</span>{% endif %}
         </div>
-        <div><strong>{% translate "Problem:" %}</strong> {{ log.problems|default:"—" }}</div>
-        <div><strong>{% translate "Solution:" %}</strong> {{ log.solutions|default:"—" }}</div>
+        {% if log.problems %}<div class="log-row"><span class="log-key">{% translate "Problem" %}</span>{{ log.problems }}</div>{% endif %}
+        {% if log.solutions %}<div class="log-row"><span class="log-key">{% translate "Solution" %}</span>{{ log.solutions }}</div>{% endif %}
     </div>
     {% endfor %}
     {% endif %}
