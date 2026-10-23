@@ -43,7 +43,7 @@ class HomeView(TemplateView):
         context["topics"] = Topic.objects.filter(course__in=active_courses).count()
         context["materials"] = Material.objects.filter(topic__course__in=active_courses).count()
         context["schedules"] = CourseSchedule.objects.filter(course__in=active_courses).count()
-        context["recent_courses"] = active_courses.order_by("-created_at")[:5]
+        context["recent_courses"] = active_courses.select_related("assignature", "period").order_by("-created_at")[:5]
         return context
 
 
@@ -76,7 +76,11 @@ class CourseListView(ListView):
 
     def get_queryset(self):
         today = timezone.now().date()
-        return Course.objects.filter(period__start_date__lte=today, period__end_date__gte=today).order_by("-created_at")
+        return (
+            Course.objects.filter(period__start_date__lte=today, period__end_date__gte=today)
+            .select_related("assignature", "period")
+            .order_by("-created_at")
+        )
 
 
 # ==================== TOPIC VIEWS ====================
@@ -92,7 +96,7 @@ class TopicListView(ListView):
 
     def get_queryset(self):
         course_id = self.kwargs["course_id"]
-        return Topic.objects.filter(course_id=course_id).order_by("order")
+        return Topic.objects.filter(course_id=course_id).prefetch_related("materials").order_by("order")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -283,7 +287,7 @@ class MaterialListView(ListView):
 
     def get_queryset(self):
         topic_id = self.kwargs["topic_id"]
-        return Material.objects.filter(topic_id=topic_id).order_by("code")
+        return Material.objects.filter(topic_id=topic_id).select_related("topic").order_by("code")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

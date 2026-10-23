@@ -1,13 +1,16 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
 from django.test import Client, TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils import timezone
 
 from schedule.models import CourseCalendarLog
 
-from .models import Assignature, Course, Period, Topic
+from .models import Assignature, Course, Material, Period, Topic
 from .syllabus_parser import SyllabusCSVError, parse_syllabus_csv
 
 
@@ -580,3 +583,44 @@ class TopicMoveViewTestCase(TestCase):
         self.assertEqual(
             [(s.topic.name, s.ideal_topic.name) for s in sessions], [("T1", "T1"), ("T5", "T1"), ("T2", "T2")]
         )
+
+
+class ListQueryCountTestCase(TestCase):
+    """List pages run the same number of queries however many rows they show (no N+1)"""
+
+    def setUp(self):
+        today = timezone.localdate()
+        self.period = Period.objects.create(
+            name="Now", start_date=today - timedelta(days=30), end_date=today + timedelta(days=30)
+        )
+        self.assignature = Assignature.objects.create(code="CS101", name="Test", uv=4)
+        self.course = self._add_course("A")
+
+    def _add_course(self, name):
+        course = Course.objects.create(assignature=self.assignature, period=self.period, name=name)
+        self._add_topics(course, 1, 2)
+        return course
+
+    def _add_topics(self, course, first, last):
+        for order in range(first, last + 1):
+            topic = Topic.objects.create(course=course, code=f"T{order}", name=f"Topic {order}", order=order)
+            Material.objects.create(topic=topic, code="M1", name="Slides", material_type="url", url_or_path="x")
+
+    def assertQueriesDontGrow(self, url, add_rows):
+        with CaptureQueriesContext(connection) as before:
+            self.client.get(url)
+        add_rows()
+        with CaptureQueriesContext(connection) as after:
+            self.client.get(url)
+        self.assertEqual(len(before), len(after))
+
+    def test_topic_list(self):
+        self.assertQueriesDontGrow(
+            reverse("courses:topic-list", args=[self.course.pk]), lambda: self._add_topics(self.course, 3, 8)
+        )
+
+    def test_course_list(self):
+        self.assertQueriesDontGrow(reverse("courses:course-list"), lambda: [self._add_course(n) for n in "BCD"])
+
+    def test_home(self):
+        self.assertQueriesDontGrow(reverse("courses:home"), lambda: [self._add_course(n) for n in "BCD"])
