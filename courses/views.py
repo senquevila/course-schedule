@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.contrib import messages
 from django.urls import reverse, reverse_lazy
 from django.db import IntegrityError, transaction
-from django.db.models import Exists, F, Max, OuterRef
+from django.db.models import Exists, F, Max, OuterRef, Q
 from django.utils import timezone
 
 import calendar
@@ -16,7 +16,7 @@ from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadFo
 from django.utils import formats
 from django.utils.dates import WEEKDAYS_ABBR
 from django.utils.translation import gettext as _, ngettext
-from schedule.models import CourseSchedule, CourseCalendar, CourseCalendarLog, NonWorkingDay, LogStatus
+from schedule.models import CourseSchedule, CourseCalendar, CourseCalendarLog, NonWorkingDay, LogStatus, EARLY_LOGGED
 from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
 
 
@@ -48,7 +48,7 @@ class TodayView(TemplateView):
         context = super().get_context_data(**kwargs)
         today = timezone.localdate()
         context['today'] = today
-        context['sessions'] = CourseCalendar.objects.filter(session_date=today).select_related(
+        context['sessions'] = CourseCalendar.objects.filter(session_date=today).exclude(EARLY_LOGGED).select_related(
             'course__assignature', 'topic'
         ).prefetch_related('logs', 'topic__materials').order_by('start_time')
         return context
@@ -93,7 +93,7 @@ def _topic_progress(course, today):
     without delays. Topics pushed past the period's last slot by delays have no
     session left: those are lost."""
     topics = list(Topic.objects.filter(course=course).order_by('order'))
-    last = CourseCalendar.objects.filter(course=course, session_date__lte=today).select_related(
+    last = CourseCalendar.objects.filter(course=course, session_date__lte=today).exclude(EARLY_LOGGED).select_related(
         'topic', 'ideal_topic').order_by('-session_date', '-start_time').first()
     scheduled = set(CourseCalendar.objects.filter(course=course, topic__isnull=False).values_list('topic_id', flat=True))
     current = last and last.topic
@@ -419,16 +419,21 @@ class CourseCalendarListView(TemplateView):
         year = int(self.request.GET.get('year', today.year))
         month = int(self.request.GET.get('month', today.month))
 
-        sessions = CourseCalendar.objects.filter(
-            course=course, session_date__year=year, session_date__month=month
-        ).select_related('topic').prefetch_related('logs').order_by('start_time')
+        # Sessions taught early show on the day they were taught, not on their slot
+        sessions = CourseCalendar.objects.filter(course=course).filter(
+            Q(session_date__year=year, session_date__month=month)
+            | Q(logs__actual_date__year=year, logs__actual_date__month=month)
+        ).distinct().select_related('topic').prefetch_related('logs').order_by('start_time')
         # A delay repeats its topic on later slots: only the first one shows it
         first_session_by_topic = dict(CourseCalendar.objects.filter(course=course, topic__isnull=False)
                                       .order_by('-session_date', '-start_time').values_list('topic_id', 'id'))
         sessions_by_day = {}
         for session in sessions:
+            shown = session.early_date or session.session_date
+            if (shown.year, shown.month) != (year, month):
+                continue
             session.is_delay = bool(session.topic_id) and first_session_by_topic[session.topic_id] != session.id
-            sessions_by_day.setdefault(session.session_date.day, []).append(session)
+            sessions_by_day.setdefault(shown.day, []).append(session)
 
         cal = calendar.Calendar(firstweekday=6)  # Sunday first, matches day_of_week convention
         weeks = [
@@ -507,8 +512,9 @@ class CourseCalendarLogCreateView(View):
         return response
 
 
-def _save_log(form, session):
-    """Save a valid CourseCalendarLogForm for `session` and re-flow the calendar after it."""
+def _save_log(form, session, previous_date=None):
+    """Save a valid CourseCalendarLogForm for `session` and re-flow the calendar after it.
+    `previous_date` is an edited log's old actual date, so its old effect is undone too."""
     log = form.save(commit=False)
     if form.cleaned_data['has_issues'] == 'no':
         # Happened as scheduled: record the session's own date, nothing else
@@ -517,7 +523,8 @@ def _save_log(form, session):
     log.save()
     log.calendar_entries.add(session)
     # The re-flow replays every delay after this date, this log's included
-    _regenerate_after(session.course, min(log.actual_date or session.session_date, session.session_date))
+    dates = [log.actual_date or session.session_date, session.session_date, previous_date or session.session_date]
+    _regenerate_after(session.course, min(dates))
     return log
 
 
@@ -585,12 +592,13 @@ class CourseCalendarLogUpdateView(View):
 
     def post(self, request, course_id, log_id):
         log, session = _course_log_or_404(course_id, log_id)
+        previous_date = log.actual_date  # the form overwrites it on validation
         form = CourseCalendarLogForm(request.POST, instance=log)
         if not form.is_valid():
             return self._render_form(request, log, session, form)
         with transaction.atomic():
             # Re-flowing from the session undoes the old delay's effect
-            _save_log(form, session)
+            _save_log(form, session, previous_date)
         return HttpResponse(headers={'HX-Refresh': 'true'})
 
 
@@ -827,13 +835,9 @@ def _generate_calendar_sessions(course, schedule, non_working_days, after=None):
         day_of_week = (current.weekday() + 1) % 7  # model: 0=Sunday..6=Saturday
         if day_of_week in schedule.days and current not in non_working_days:
             for hour in range(schedule.start_time.hour, schedule.end_time.hour):
-                _session, created = CourseCalendar.objects.get_or_create(
-                    course=course,
-                    session_date=current,
-                    start_time=time(hour, 0),
-                    defaults={'day_of_week': day_of_week, 'end_time': time(hour + 1, 0)},
-                )
-                if created:
+                slot = dict(course=course, session_date=current, start_time=time(hour, 0))
+                if not CourseCalendar.objects.filter(**slot).exclude(EARLY_LOGGED).exists():
+                    CourseCalendar.objects.create(**slot, day_of_week=day_of_week, end_time=time(hour + 1, 0))
                     created_count += 1
         current += timedelta(days=1)
     return created_count
@@ -868,7 +872,7 @@ def _assign_ideal_topics(course, keep_logged=False):
     delays never change this; only schedule or topic edits do. With `keep_logged`,
     logged sessions keep the ideal topic they had."""
     topics = list(Topic.objects.filter(course=course).order_by('order'))
-    sessions = CourseCalendar.objects.filter(course=course).annotate(
+    sessions = CourseCalendar.objects.filter(course=course).exclude(EARLY_LOGGED).annotate(
         has_logs=Exists(CourseCalendarLog.objects.filter(calendar_entries=OuterRef('pk')))
     ).order_by('session_date', 'start_time')
     for i, session in enumerate(sessions):

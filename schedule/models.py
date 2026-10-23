@@ -1,6 +1,10 @@
 from django.db import models
+from django.db.models import F, Q
 from django.utils.dates import WEEKDAYS, WEEKDAYS_ABBR
 from django.utils.translation import gettext_lazy as _
+
+# A session taught ahead of its slot frees the slot; another session takes it
+EARLY_LOGGED = Q(logs__actual_date__lt=F('session_date'))
 
 
 class CourseSchedule(models.Model):
@@ -62,7 +66,6 @@ class CourseCalendar(models.Model):
         ordering = ['session_date', 'start_time']
         verbose_name = 'Course Calendar'
         verbose_name_plural = 'Course Calendars'
-        unique_together = ['course', 'session_date', 'start_time']
         indexes = [
             models.Index(fields=['session_date']),
             models.Index(fields=['course', 'session_date']),
@@ -82,6 +85,12 @@ class CourseCalendar(models.Model):
             return LogStatus.MANY
         actual = logs[0].actual_date
         return LogStatus.DELAYED if actual and actual > self.session_date else LogStatus.OK
+
+    @property
+    def early_date(self):
+        """Date this session was taught ahead of its slot, None if it wasn't"""
+        dates = [log.actual_date for log in self.logs.all() if log.actual_date and log.actual_date < self.session_date]
+        return min(dates, default=None)
 
 
 class NonWorkingDay(models.Model):

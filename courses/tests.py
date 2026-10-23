@@ -433,6 +433,20 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         self.log(12, has_issues='yes', actual_date='2026-09-14')
         self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})
 
+    def test_early_log_frees_its_slot(self):
+        from schedule.models import CourseCalendar
+        self.log(19, has_issues='yes', actual_date='2026-09-12')
+        slots = CourseCalendar.objects.filter(course=self.course).exclude(logs__isnull=False)
+        self.assertEqual({s.session_date.day: s.topic and s.topic.name for s in slots},
+                         {5: 'T1', 12: 'T2', 19: 'T4', 26: None})
+        response = self.client.get(reverse('courses:calendar-list', args=[self.course.id]), {'year': 2026, 'month': 9})
+        shown = {(d, s.topic and s.topic.name) for week in response.context['weeks'] for d, day in week for s in day}
+        self.assertEqual(shown, {(5, 'T1'), (12, 'T2'), (12, 'T3'), (19, 'T4'), (26, None)})
+
+        log = CourseCalendarLog.objects.get()
+        self.client.post(reverse('courses:calendar-log-edit', args=[self.course.id, log.id]), {'has_issues': 'no'})
+        self.assertEqual(self.topics_by_day(), {5: 'T1', 12: 'T2', 19: 'T3', 26: 'T4'})
+
     def test_delays_view(self):
         self.log(5, has_issues='no')
         self.log(12, has_issues='yes', actual_date='2026-09-15')
