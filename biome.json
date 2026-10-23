@@ -1,0 +1,11 @@
+{
+    "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
+    "files": {
+        "includes": ["static/**", "!staticfiles"]
+    },
+    "formatter": {
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineWidth": 120
+    }
+}
