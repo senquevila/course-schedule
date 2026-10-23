@@ -4,8 +4,8 @@ from django import forms
 from django.conf import settings
 from django.utils.dates import WEEKDAYS
 from django.utils.translation import gettext_lazy as _
-from .models import Topic, Material, Course
-from schedule.models import CourseSchedule, CourseCalendarLog
+from .models import Topic, Material
+from schedule.models import CourseCalendarLog
 
 
 class TopicForm(forms.ModelForm):

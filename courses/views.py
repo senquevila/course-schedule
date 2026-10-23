@@ -1,9 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
+from django.views.generic import ListView, TemplateView
 from django.http import HttpResponse
 from django.contrib import messages
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse
 from django.db import IntegrityError, transaction
 from django.db.models import Exists, F, Max, OuterRef, Q
 from django.utils import timezone
