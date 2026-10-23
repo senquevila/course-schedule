@@ -434,6 +434,8 @@ class CourseCalendarListView(TemplateView):
                 continue
             session.is_delay = bool(session.topic_id) and first_session_by_topic[session.topic_id] != session.id
             sessions_by_day.setdefault(shown.day, []).append(session)
+        for day, day_sessions in sessions_by_day.items():
+            sessions_by_day[day] = _group_by_hour(day_sessions)
 
         cal = calendar.Calendar(firstweekday=6)  # Sunday first, matches day_of_week convention
         weeks = [
@@ -462,6 +464,20 @@ class CourseCalendarListView(TemplateView):
         return context
 
 
+def _group_by_hour(sessions):
+    """Collapse sessions sharing an hour (topics taught early land on another's slot)
+    into the slot's own session, carrying the rest in `others`."""
+    by_hour = {}
+    for session in sessions:
+        by_hour.setdefault(session.start_time, []).append(session)
+    grouped = []
+    for group in by_hour.values():
+        group.sort(key=lambda session: session.early_date is not None)  # the slot's own session first
+        group[0].others = group[1:]
+        grouped.append(group[0])
+    return grouped
+
+
 class CourseCalendarSessionDetailView(View):
     """Return the modal detail for one CourseCalendar session"""
 
@@ -470,10 +486,18 @@ class CourseCalendarSessionDetailView(View):
             CourseCalendar.objects.select_related('topic', 'ideal_topic', 'course'),
             pk=session_id, course_id=course_id,
         )
+        shown = session.early_date or session.session_date
+        others = [
+            other for other in CourseCalendar.objects.filter(
+                Q(session_date=shown) | Q(logs__actual_date=shown),
+                course_id=course_id, start_time=session.start_time,
+            ).exclude(pk=session.pk).distinct().select_related('topic').prefetch_related('logs')
+            if (other.early_date or other.session_date) == shown
+        ]
         return render(
             request,
             'courses/partials/calendar_session_detail.html',
-            {'session': session},
+            {'session': session, 'others': others},
         )
 
 

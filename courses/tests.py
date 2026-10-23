@@ -440,8 +440,13 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         self.assertEqual({s.session_date.day: s.topic and s.topic.name for s in slots},
                          {5: 'T1', 12: 'T2', 19: 'T4', 26: None})
         response = self.client.get(reverse('courses:calendar-list', args=[self.course.id]), {'year': 2026, 'month': 9})
-        shown = {(d, s.topic and s.topic.name) for week in response.context['weeks'] for d, day in week for s in day}
-        self.assertEqual(shown, {(5, 'T1'), (12, 'T2'), (12, 'T3'), (19, 'T4'), (26, None)})
+        shown = {(d, s.topic and s.topic.name, tuple(o.topic.name for o in s.others))
+                 for week in response.context['weeks'] for d, day in week for s in day}
+        self.assertEqual(shown, {(5, 'T1', ()), (12, 'T2', ('T3',)), (19, 'T4', ()), (26, None, ())})
+        self.assertContains(response, 'calendar-session-badge')
+        t2 = CourseCalendar.objects.get(course=self.course, session_date=date(2026, 9, 12))
+        detail = self.client.get(reverse('courses:calendar-session-detail', args=[self.course.id, t2.id]))
+        self.assertEqual([o.topic.name for o in detail.context['others']], ['T3'])
 
         log = CourseCalendarLog.objects.get()
         self.client.post(reverse('courses:calendar-log-edit', args=[self.course.id, log.id]), {'has_issues': 'no'})

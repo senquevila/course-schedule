@@ -64,6 +64,9 @@
                          onclick="openModal()">
                         <span class="calendar-session-time">{{ session.start_time|time:"H:i" }}</span>
                         <span class="calendar-session-topic">{{ session.topic.name|default:unassigned }}</span>
+                        {% if session.others %}
+                        <span class="calendar-session-badge" title="{% for other in session.others %}{{ other.topic.name|default:unassigned }}{% if not forloop.last %}&#10;{% endif %}{% endfor %}">{{ session.others|length }}</span>
+                        {% endif %}
                     </div>
                     {% endif %}
                     {% endfor %}

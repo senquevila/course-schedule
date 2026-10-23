@@ -910,3 +910,6 @@ msgstr "Al día"
 
 msgid "Behind"
 msgstr "Atrasado"
+
+msgid "Also in this hour"
+msgstr "También en esta hora"

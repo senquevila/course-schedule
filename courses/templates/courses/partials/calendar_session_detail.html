@@ -29,6 +29,13 @@
         </tr>
     </table>
 
+    {% if others %}
+    <h4 class="mt-3">{% translate "Also in this hour" %}</h4>
+    {% for other in others %}
+    <div class="material-entry"><a href="#" hx-get="{% url 'courses:calendar-session-detail' other.course_id other.id %}" hx-target="#modal-body">{{ other.topic.name|default:"—" }}</a></div>
+    {% endfor %}
+    {% endif %}
+
     {% with materials=session.topic.materials.all %}
     {% if materials %}
     <h4 class="mt-3">{% translate "Materials" %}</h4>

@@ -900,6 +900,7 @@ tbody tr.log-row:hover td { background: var(--mint); }
 }
 
 .calendar-session {
+    position: relative;
     display: flex;
     gap: 0.25rem;
     margin-bottom: 0.1875rem;
@@ -912,6 +913,26 @@ tbody tr.log-row:hover td { background: var(--mint); }
 }
 
 .calendar-session:hover { filter: brightness(0.96); }
+
+/* More topics taught in the same hour, like a notification count */
+.calendar-session-badge {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.3125rem;
+    box-sizing: border-box;
+    border-radius: 999px;  /* a circle; stretches to a pill past 9, like iOS */
+    background: #ff3b30;  /* iOS system red */
+    box-shadow: 0 0 0 2px #fff, 0 1px 2px rgb(0 0 0 / 0.25);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.25rem;
+    text-align: center;
+    font-style: normal;
+}
 
 .calendar-session-time {
     font-weight: 600;
