@@ -18,6 +18,12 @@
            hx-target="#calendar-grid"
            hx-swap="outerHTML"
            hx-push-url="true">← {% translate "Prev" %}</a>
+        <a class="btn btn-secondary btn-sm"
+           href="{% url 'courses:calendar-list' course.id %}"
+           hx-get="{% url 'courses:calendar-list' course.id %}"
+           hx-target="#calendar-grid"
+           hx-swap="outerHTML"
+           hx-push-url="true">{% translate "Today" %}</a>
         <h2>{{ month_name }}</h2>
         <a class="btn btn-secondary btn-sm"
            href="?year={{ next_year }}&month={{ next_month }}"
