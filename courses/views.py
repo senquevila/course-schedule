@@ -1,90 +1,103 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.views import View
-from django.views.generic import ListView, TemplateView
-from django.http import HttpResponse
-from django.contrib import messages
-from django.urls import reverse
-from django.db import IntegrityError, transaction
-from django.db.models import Exists, F, Max, OuterRef, Q
-from django.utils import timezone
-
 import calendar
 from datetime import date, time, timedelta
 
-from .models import Course, Topic, Material, SyllabusDraftTopic
-from .forms import TopicForm, MaterialForm, CourseScheduleForm, SyllabusUploadForm, TopicReviewForm, CourseCalendarLogForm
-from django.utils import formats
+from django.contrib import messages
+from django.db import IntegrityError, transaction
+from django.db.models import Exists, F, Max, OuterRef, Q
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import formats, timezone
 from django.utils.dates import WEEKDAYS_ABBR
-from django.utils.translation import gettext as _, ngettext
-from schedule.models import CourseSchedule, CourseCalendar, CourseCalendarLog, NonWorkingDay, LogStatus, EARLY_LOGGED
-from .syllabus_parser import parse_syllabus_csv, SyllabusCSVError
+from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
+from django.views import View
+from django.views.generic import ListView, TemplateView
 
+from schedule.models import EARLY_LOGGED, CourseCalendar, CourseCalendarLog, CourseSchedule, LogStatus, NonWorkingDay
+
+from .forms import (
+    CourseCalendarLogForm,
+    CourseScheduleForm,
+    MaterialForm,
+    SyllabusUploadForm,
+    TopicForm,
+    TopicReviewForm,
+)
+from .models import Course, Material, SyllabusDraftTopic, Topic
+from .syllabus_parser import SyllabusCSVError, parse_syllabus_csv
 
 # ==================== HOME VIEWS ====================
 
+
 class HomeView(TemplateView):
     """Display home page with menu and course overview"""
-    template_name = 'courses/home.html'
+
+    template_name = "courses/home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         today = timezone.now().date()
-        active_courses = Course.objects.filter(
-            period__start_date__lte=today, period__end_date__gte=today
-        )
-        context['courses'] = active_courses.count()
-        context['topics'] = Topic.objects.filter(course__in=active_courses).count()
-        context['materials'] = Material.objects.filter(topic__course__in=active_courses).count()
-        context['schedules'] = CourseSchedule.objects.filter(course__in=active_courses).count()
-        context['recent_courses'] = active_courses.order_by('-created_at')[:5]
+        active_courses = Course.objects.filter(period__start_date__lte=today, period__end_date__gte=today)
+        context["courses"] = active_courses.count()
+        context["topics"] = Topic.objects.filter(course__in=active_courses).count()
+        context["materials"] = Material.objects.filter(topic__course__in=active_courses).count()
+        context["schedules"] = CourseSchedule.objects.filter(course__in=active_courses).count()
+        context["recent_courses"] = active_courses.order_by("-created_at")[:5]
         return context
 
 
 class TodayView(TemplateView):
     """Today's sessions across all courses, with their topic and materials"""
-    template_name = 'courses/today.html'
+
+    template_name = "courses/today.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         today = timezone.localdate()
-        context['today'] = today
-        context['sessions'] = CourseCalendar.objects.filter(session_date=today).exclude(EARLY_LOGGED).select_related(
-            'course__assignature', 'topic'
-        ).prefetch_related('logs', 'topic__materials').order_by('start_time')
+        context["today"] = today
+        context["sessions"] = (
+            CourseCalendar.objects.filter(session_date=today)
+            .exclude(EARLY_LOGGED)
+            .select_related("course__assignature", "topic")
+            .prefetch_related("logs", "topic__materials")
+            .order_by("start_time")
+        )
         return context
 
 
 class CourseListView(ListView):
     """Display only courses whose period is currently active"""
+
     model = Course
-    template_name = 'courses/course_list.html'
-    context_object_name = 'courses'
+    template_name = "courses/course_list.html"
+    context_object_name = "courses"
     paginate_by = 20
 
     def get_queryset(self):
         today = timezone.now().date()
-        return Course.objects.filter(
-            period__start_date__lte=today, period__end_date__gte=today
-        ).order_by('-created_at')
+        return Course.objects.filter(period__start_date__lte=today, period__end_date__gte=today).order_by("-created_at")
 
 
 # ==================== TOPIC VIEWS ====================
 
+
 class TopicListView(ListView):
     """Display list of all topics for a course"""
+
     model = Topic
-    template_name = 'courses/topics_list.html'
-    context_object_name = 'topics'
+    template_name = "courses/topics_list.html"
+    context_object_name = "topics"
     paginate_by = 50
 
     def get_queryset(self):
-        course_id = self.kwargs['course_id']
-        return Topic.objects.filter(course_id=course_id).order_by('order')
+        course_id = self.kwargs["course_id"]
+        return Topic.objects.filter(course_id=course_id).order_by("order")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['course'] = get_object_or_404(Course, pk=self.kwargs['course_id'])
-        context.update(_topic_progress(context['course'], timezone.localdate()))
+        context["course"] = get_object_or_404(Course, pk=self.kwargs["course_id"])
+        context.update(_topic_progress(context["course"], timezone.localdate()))
         return context
 
 
@@ -92,17 +105,24 @@ def _topic_progress(course, today):
     """Where the course is (latest session up to today) vs. where it should be
     without delays. Topics pushed past the period's last slot by delays have no
     session left: those are lost."""
-    topics = list(Topic.objects.filter(course=course).order_by('order'))
-    last = CourseCalendar.objects.filter(course=course, session_date__lte=today).exclude(EARLY_LOGGED).select_related(
-        'topic', 'ideal_topic').order_by('-session_date', '-start_time').first()
-    scheduled = set(CourseCalendar.objects.filter(course=course, topic__isnull=False).values_list('topic_id', flat=True))
+    topics = list(Topic.objects.filter(course=course).order_by("order"))
+    last = (
+        CourseCalendar.objects.filter(course=course, session_date__lte=today)
+        .exclude(EARLY_LOGGED)
+        .select_related("topic", "ideal_topic")
+        .order_by("-session_date", "-start_time")
+        .first()
+    )
+    scheduled = set(
+        CourseCalendar.objects.filter(course=course, topic__isnull=False).values_list("topic_id", flat=True)
+    )
     current = last and last.topic
     ideal = last and last.ideal_topic
     return {
-        'current_topic': current,
-        'ideal_topic': ideal,
-        'topics_behind': topics.index(ideal) - topics.index(current) if current and ideal else 0,
-        'lost_topics': [t for t in topics if t.id not in scheduled],
+        "current_topic": current,
+        "ideal_topic": ideal,
+        "topics_behind": topics.index(ideal) - topics.index(current) if current and ideal else 0,
+        "lost_topics": [t for t in topics if t.id not in scheduled],
     }
 
 
@@ -114,20 +134,18 @@ class TopicCreateView(View):
         course = get_object_or_404(Course, pk=course_id)
 
         # Get next order number
-        last_topic = Topic.objects.filter(course=course).aggregate(
-            max_order=Max('order')
-        )
-        next_order = (last_topic['max_order'] or 0) + 1
+        last_topic = Topic.objects.filter(course=course).aggregate(max_order=Max("order"))
+        next_order = (last_topic["max_order"] or 0) + 1
 
-        form = TopicForm(initial={'order': next_order})
+        form = TopicForm(initial={"order": next_order})
         return render(
             request,
-            'courses/partials/topic_form.html',
+            "courses/partials/topic_form.html",
             {
-                'form': form,
-                'course': course,
-                'is_create': True,
-            }
+                "form": form,
+                "course": course,
+                "is_create": True,
+            },
         )
 
     def post(self, request, course_id):
@@ -140,25 +158,21 @@ class TopicCreateView(View):
             topic.course = course
             topic.save()
             _reflow_topics(course)
-            messages.success(request, _('Topic "%(name)s" created successfully.') % {'name': topic.name})
+            messages.success(request, _('Topic "%(name)s" created successfully.') % {"name": topic.name})
 
             # Return the new topic row
-            return render(
-                request,
-                'courses/partials/topic_item.html',
-                {'topic': topic}
-            )
+            return render(request, "courses/partials/topic_item.html", {"topic": topic})
         else:
             # Return form with errors
             return render(
                 request,
-                'courses/partials/topic_form.html',
+                "courses/partials/topic_form.html",
                 {
-                    'form': form,
-                    'course': course,
-                    'is_create': True,
+                    "form": form,
+                    "course": course,
+                    "is_create": True,
                 },
-                status=400
+                status=400,
             )
 
 
@@ -173,13 +187,13 @@ class TopicUpdateView(View):
 
         return render(
             request,
-            'courses/partials/topic_form.html',
+            "courses/partials/topic_form.html",
             {
-                'form': form,
-                'course': course,
-                'topic': topic,
-                'is_create': False,
-            }
+                "form": form,
+                "course": course,
+                "topic": topic,
+                "is_create": False,
+            },
         )
 
     def post(self, request, course_id, topic_id):
@@ -191,26 +205,22 @@ class TopicUpdateView(View):
         if form.is_valid():
             topic = form.save()
             _reflow_topics(course)
-            messages.success(request, _('Topic "%(name)s" updated successfully.') % {'name': topic.name})
+            messages.success(request, _('Topic "%(name)s" updated successfully.') % {"name": topic.name})
 
             # Return the updated topic row
-            return render(
-                request,
-                'courses/partials/topic_item.html',
-                {'topic': topic}
-            )
+            return render(request, "courses/partials/topic_item.html", {"topic": topic})
         else:
             # Return form with errors
             return render(
                 request,
-                'courses/partials/topic_form.html',
+                "courses/partials/topic_form.html",
                 {
-                    'form': form,
-                    'course': course,
-                    'topic': topic,
-                    'is_create': False,
+                    "form": form,
+                    "course": course,
+                    "topic": topic,
+                    "is_create": False,
                 },
-                status=400
+                status=400,
             )
 
 
@@ -225,7 +235,7 @@ class TopicDeleteView(View):
         topic.delete()
         _reflow_topics(course)
 
-        messages.success(request, _('Topic "%(name)s" deleted successfully.') % {'name': topic_name})
+        messages.success(request, _('Topic "%(name)s" deleted successfully.') % {"name": topic_name})
         return HttpResponse(status=200)
 
 
@@ -237,44 +247,48 @@ class TopicMoveView(View):
         course = get_object_or_404(Course, pk=course_id)
         topic = get_object_or_404(Topic, pk=topic_id, course=course)
         # ponytail: no max on the input, positions past the end are clamped on save
-        return render(request, 'courses/partials/topic_move_form.html', {'course': course, 'topic': topic})
+        return render(request, "courses/partials/topic_move_form.html", {"course": course, "topic": topic})
 
     def post(self, request, course_id, topic_id):
         course = get_object_or_404(Course, pk=course_id)
         topic = get_object_or_404(Topic, pk=topic_id, course=course)
-        topics = [t for t in Topic.objects.filter(course=course).order_by('order') if t.pk != topic.pk]
+        topics = [t for t in Topic.objects.filter(course=course).order_by("order") if t.pk != topic.pk]
         try:
-            position = min(max(int(request.POST['order']), 1), len(topics) + 1)
+            position = min(max(int(request.POST["order"]), 1), len(topics) + 1)
         except (KeyError, ValueError):
-            return redirect('courses:topic-list', course_id=course.id)
+            return redirect("courses:topic-list", course_id=course.id)
         topics.insert(position - 1, topic)
         with transaction.atomic():
             # Two passes so unique (course, order) never collides mid-update
-            Topic.objects.filter(course=course).update(order=-F('order'))
+            Topic.objects.filter(course=course).update(order=-F("order"))
             for i, t in enumerate(topics, 1):
                 Topic.objects.filter(pk=t.pk).update(order=i)
             _reflow_topics(course)
-        messages.success(request, _('Topic "%(name)s" moved to position %(order)s.') % {'name': topic.name, 'order': position})
-        return redirect('courses:topic-list', course_id=course.id)
+        messages.success(
+            request, _('Topic "%(name)s" moved to position %(order)s.') % {"name": topic.name, "order": position}
+        )
+        return redirect("courses:topic-list", course_id=course.id)
 
 
 # ==================== MATERIAL VIEWS ====================
 
+
 class MaterialListView(ListView):
     """Display list of materials for a topic"""
+
     model = Material
-    template_name = 'courses/materials_list.html'
-    context_object_name = 'materials'
+    template_name = "courses/materials_list.html"
+    context_object_name = "materials"
     paginate_by = 50
 
     def get_queryset(self):
-        topic_id = self.kwargs['topic_id']
-        return Material.objects.filter(topic_id=topic_id).order_by('code')
+        topic_id = self.kwargs["topic_id"]
+        return Material.objects.filter(topic_id=topic_id).order_by("code")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['course'] = get_object_or_404(Course, pk=self.kwargs['course_id'])
-        context['topic'] = get_object_or_404(Topic, pk=self.kwargs['topic_id'])
+        context["course"] = get_object_or_404(Course, pk=self.kwargs["course_id"])
+        context["topic"] = get_object_or_404(Topic, pk=self.kwargs["topic_id"])
         return context
 
 
@@ -289,13 +303,13 @@ class MaterialCreateView(View):
 
         return render(
             request,
-            'courses/partials/material_form.html',
+            "courses/partials/material_form.html",
             {
-                'form': form,
-                'course': course,
-                'topic': topic,
-                'is_create': True,
-            }
+                "form": form,
+                "course": course,
+                "topic": topic,
+                "is_create": True,
+            },
         )
 
     def post(self, request, course_id, topic_id):
@@ -308,26 +322,22 @@ class MaterialCreateView(View):
             material = form.save(commit=False)
             material.topic = topic
             material.save()
-            messages.success(request, _('Material "%(name)s" added successfully.') % {'name': material.name})
+            messages.success(request, _('Material "%(name)s" added successfully.') % {"name": material.name})
 
             # Return the new material row
-            return render(
-                request,
-                'courses/partials/material_item.html',
-                {'material': material}
-            )
+            return render(request, "courses/partials/material_item.html", {"material": material})
         else:
             # Return form with errors
             return render(
                 request,
-                'courses/partials/material_form.html',
+                "courses/partials/material_form.html",
                 {
-                    'form': form,
-                    'course': course,
-                    'topic': topic,
-                    'is_create': True,
+                    "form": form,
+                    "course": course,
+                    "topic": topic,
+                    "is_create": True,
                 },
-                status=400
+                status=400,
             )
 
 
@@ -343,14 +353,14 @@ class MaterialUpdateView(View):
 
         return render(
             request,
-            'courses/partials/material_form.html',
+            "courses/partials/material_form.html",
             {
-                'form': form,
-                'course': course,
-                'topic': topic,
-                'material': material,
-                'is_create': False,
-            }
+                "form": form,
+                "course": course,
+                "topic": topic,
+                "material": material,
+                "is_create": False,
+            },
         )
 
     def post(self, request, course_id, topic_id, material_id):
@@ -362,27 +372,23 @@ class MaterialUpdateView(View):
 
         if form.is_valid():
             material = form.save()
-            messages.success(request, _('Material "%(name)s" updated successfully.') % {'name': material.name})
+            messages.success(request, _('Material "%(name)s" updated successfully.') % {"name": material.name})
 
             # Return the updated material row
-            return render(
-                request,
-                'courses/partials/material_item.html',
-                {'material': material}
-            )
+            return render(request, "courses/partials/material_item.html", {"material": material})
         else:
             # Return form with errors
             return render(
                 request,
-                'courses/partials/material_form.html',
+                "courses/partials/material_form.html",
                 {
-                    'form': form,
-                    'course': course,
-                    'topic': topic,
-                    'material': material,
-                    'is_create': False,
+                    "form": form,
+                    "course": course,
+                    "topic": topic,
+                    "material": material,
+                    "is_create": False,
                 },
-                status=400
+                status=400,
             )
 
 
@@ -397,36 +403,48 @@ class MaterialDeleteView(View):
         material_name = material.name
         material.delete()
 
-        messages.success(request, _('Material "%(name)s" deleted successfully.') % {'name': material_name})
+        messages.success(request, _('Material "%(name)s" deleted successfully.') % {"name": material_name})
         return HttpResponse(status=200)
 
 
 # ==================== COURSE SCHEDULE VIEWS ====================
 
+
 class CourseCalendarListView(TemplateView):
     """Display generated calendar sessions for a course as a month grid"""
-    template_name = 'courses/calendar_list.html'
+
+    template_name = "courses/calendar_list.html"
 
     def get_template_names(self):
-        if self.request.headers.get('HX-Request'):
-            return ['courses/partials/calendar_grid.html']
+        if self.request.headers.get("HX-Request"):
+            return ["courses/partials/calendar_grid.html"]
         return [self.template_name]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        course = get_object_or_404(Course, pk=self.kwargs['course_id'])
+        course = get_object_or_404(Course, pk=self.kwargs["course_id"])
         today = timezone.now().date()
-        year = int(self.request.GET.get('year', today.year))
-        month = int(self.request.GET.get('month', today.month))
+        year = int(self.request.GET.get("year", today.year))
+        month = int(self.request.GET.get("month", today.month))
 
         # Sessions taught early show on the day they were taught, not on their slot
-        sessions = CourseCalendar.objects.filter(course=course).filter(
-            Q(session_date__year=year, session_date__month=month)
-            | Q(logs__actual_date__year=year, logs__actual_date__month=month)
-        ).distinct().select_related('topic').prefetch_related('logs').order_by('start_time')
+        sessions = (
+            CourseCalendar.objects.filter(course=course)
+            .filter(
+                Q(session_date__year=year, session_date__month=month)
+                | Q(logs__actual_date__year=year, logs__actual_date__month=month)
+            )
+            .distinct()
+            .select_related("topic")
+            .prefetch_related("logs")
+            .order_by("start_time")
+        )
         # A delay repeats its topic on later slots: only the first one shows it
-        first_session_by_topic = dict(CourseCalendar.objects.filter(course=course, topic__isnull=False)
-                                      .order_by('-session_date', '-start_time').values_list('topic_id', 'id'))
+        first_session_by_topic = dict(
+            CourseCalendar.objects.filter(course=course, topic__isnull=False)
+            .order_by("-session_date", "-start_time")
+            .values_list("topic_id", "id")
+        )
         sessions_by_day = {}
         for session in sessions:
             shown = session.early_date or session.session_date
@@ -438,29 +456,28 @@ class CourseCalendarListView(TemplateView):
             sessions_by_day[day] = _group_by_hour(day_sessions)
 
         cal = calendar.Calendar(firstweekday=6)  # Sunday first, matches day_of_week convention
-        weeks = [
-            [(day, sessions_by_day.get(day, [])) for day in week]
-            for week in cal.monthdayscalendar(year, month)
-        ]
+        weeks = [[(day, sessions_by_day.get(day, [])) for day in week] for week in cal.monthdayscalendar(year, month)]
 
         prev_month = date(year, month, 1) - timedelta(days=1)
         next_month = date(year, month, 28) + timedelta(days=7)
 
-        context.update({
-            'course': course,
-            'weeks': weeks,
-            'month_name': formats.date_format(date(year, month, 1), 'YEAR_MONTH_FORMAT'),
-            'weekday_names': [WEEKDAYS_ABBR[(i - 1) % 7] for i in range(7)],  # Sunday first
-            'prev_year': prev_month.year,
-            'prev_month': prev_month.month,
-            'next_year': next_month.year,
-            'next_month': next_month.month,
-            'today': today,
-            'current_year': year,
-            'current_month': month,
-            'log_statuses': LogStatus,
-            'lost_topics': _topic_progress(course, today)['lost_topics'],
-        })
+        context.update(
+            {
+                "course": course,
+                "weeks": weeks,
+                "month_name": formats.date_format(date(year, month, 1), "YEAR_MONTH_FORMAT"),
+                "weekday_names": [WEEKDAYS_ABBR[(i - 1) % 7] for i in range(7)],  # Sunday first
+                "prev_year": prev_month.year,
+                "prev_month": prev_month.month,
+                "next_year": next_month.year,
+                "next_month": next_month.month,
+                "today": today,
+                "current_year": year,
+                "current_month": month,
+                "log_statuses": LogStatus,
+                "lost_topics": _topic_progress(course, today)["lost_topics"],
+            }
+        )
         return context
 
 
@@ -483,21 +500,28 @@ class CourseCalendarSessionDetailView(View):
 
     def get(self, request, course_id, session_id):
         session = get_object_or_404(
-            CourseCalendar.objects.select_related('topic', 'ideal_topic', 'course'),
-            pk=session_id, course_id=course_id,
+            CourseCalendar.objects.select_related("topic", "ideal_topic", "course"),
+            pk=session_id,
+            course_id=course_id,
         )
         shown = session.early_date or session.session_date
         others = [
-            other for other in CourseCalendar.objects.filter(
+            other
+            for other in CourseCalendar.objects.filter(
                 Q(session_date=shown) | Q(logs__actual_date=shown),
-                course_id=course_id, start_time=session.start_time,
-            ).exclude(pk=session.pk).distinct().select_related('topic').prefetch_related('logs')
+                course_id=course_id,
+                start_time=session.start_time,
+            )
+            .exclude(pk=session.pk)
+            .distinct()
+            .select_related("topic")
+            .prefetch_related("logs")
             if (other.early_date or other.session_date) == shown
         ]
         return render(
             request,
-            'courses/partials/calendar_session_detail.html',
-            {'session': session, 'others': others},
+            "courses/partials/calendar_session_detail.html",
+            {"session": session, "others": others},
         )
 
 
@@ -508,9 +532,12 @@ class CourseCalendarLogCreateView(View):
         # ponytail: 200 on invalid form so htmx 1.9 swaps the errors in without response-targets
         return render(
             request,
-            'courses/partials/calendar_log_form.html',
-            {'session': session, 'form': form,
-             'form_url': reverse('courses:calendar-log-create', args=[session.course_id, session.id])},
+            "courses/partials/calendar_log_form.html",
+            {
+                "session": session,
+                "form": form,
+                "form_url": reverse("courses:calendar-log-create", args=[session.course_id, session.id]),
+            },
         )
 
     def get(self, request, course_id, session_id):
@@ -519,8 +546,9 @@ class CourseCalendarLogCreateView(View):
 
     def post(self, request, course_id, session_id):
         session = get_object_or_404(
-            CourseCalendar.objects.select_related('topic', 'ideal_topic', 'course'),
-            pk=session_id, course_id=course_id,
+            CourseCalendar.objects.select_related("topic", "ideal_topic", "course"),
+            pk=session_id,
+            course_id=course_id,
         )
         form = CourseCalendarLogForm(request.POST)
         if not form.is_valid():
@@ -529,10 +557,10 @@ class CourseCalendarLogCreateView(View):
             _save_log(form, session)
         response = render(
             request,
-            'courses/partials/calendar_session_detail.html',
-            {'session': session},
+            "courses/partials/calendar_session_detail.html",
+            {"session": session},
         )
-        response['HX-Trigger'] = 'calendarChanged'
+        response["HX-Trigger"] = "calendarChanged"
         return response
 
 
@@ -540,10 +568,10 @@ def _save_log(form, session, previous_date=None):
     """Save a valid CourseCalendarLogForm for `session` and re-flow the calendar after it.
     `previous_date` is an edited log's old actual date, so its old effect is undone too."""
     log = form.save(commit=False)
-    if form.cleaned_data['has_issues'] == 'no':
+    if form.cleaned_data["has_issues"] == "no":
         # Happened as scheduled: record the session's own date, nothing else
         log.actual_date = session.session_date
-        log.problems = log.solutions = ''
+        log.problems = log.solutions = ""
     log.save()
     log.calendar_entries.add(session)
     # The re-flow replays every delay after this date, this log's included
@@ -556,14 +584,21 @@ def _replay_delays(course, after=None):
     """Re-apply every logged delay landing after `after` (all, if None), oldest session
     first: the makeup slot takes the delayed topic and the rest re-flow after it. Without
     this, any re-flow would drop earlier delays back to the ideal topics."""
-    sessions = (CourseCalendar.objects.filter(course=course, logs__actual_date__gt=F('session_date')).distinct()
-                .select_related('topic').prefetch_related('logs').order_by('session_date', 'start_time'))
+    sessions = (
+        CourseCalendar.objects.filter(course=course, logs__actual_date__gt=F("session_date"))
+        .distinct()
+        .select_related("topic")
+        .prefetch_related("logs")
+        .order_by("session_date", "start_time")
+    )
     for session in sessions:
         for log in sorted(session.logs.all(), key=lambda log: log.created_at):
             if log.actual_date and log.actual_date > session.session_date and (not after or log.actual_date > after):
                 CourseCalendar.objects.filter(
-                    course=course, session_date=log.actual_date,
-                    start_time=session.start_time, logs__isnull=True,
+                    course=course,
+                    session_date=log.actual_date,
+                    start_time=session.start_time,
+                    logs__isnull=True,
                 ).update(topic=session.topic)
                 _rebuild_after(course, log.actual_date)
 
@@ -574,26 +609,29 @@ def _course_log_or_404(course_id, log_id):
         CourseCalendarLog.objects.filter(calendar_entries__course_id=course_id).distinct(), pk=log_id
     )
     # ponytail: logs are created for one session; multi-entry logs use their earliest
-    session = log.calendar_entries.select_related('topic', 'course').order_by('session_date', 'start_time').first()
+    session = log.calendar_entries.select_related("topic", "course").order_by("session_date", "start_time").first()
     return log, session
 
 
 class CourseCalendarLogListView(TemplateView):
     """List every log of a course with edit/delete actions"""
-    template_name = 'courses/calendar_logs.html'
+
+    template_name = "courses/calendar_logs.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        course = get_object_or_404(Course, pk=self.kwargs['course_id'])
-        logs = (CourseCalendarLog.objects.filter(calendar_entries__course=course).distinct()
-                .prefetch_related('calendar_entries__topic'))
-        logs = sorted(logs, key=lambda log: min(
-            (e.session_date, e.start_time) for e in log.calendar_entries.all()))
+        course = get_object_or_404(Course, pk=self.kwargs["course_id"])
+        logs = (
+            CourseCalendarLog.objects.filter(calendar_entries__course=course)
+            .distinct()
+            .prefetch_related("calendar_entries__topic")
+        )
+        logs = sorted(logs, key=lambda log: min((e.session_date, e.start_time) for e in log.calendar_entries.all()))
         for log in logs:
             scheduled = min(e.session_date for e in log.calendar_entries.all())
             actual = log.actual_date or scheduled
-            log.status = 'early' if actual < scheduled else 'late' if actual > scheduled else 'on-time'
-        context.update({'course': course, 'logs': logs})
+            log.status = "early" if actual < scheduled else "late" if actual > scheduled else "on-time"
+        context.update({"course": course, "logs": logs})
         return context
 
 
@@ -603,15 +641,19 @@ class CourseCalendarLogUpdateView(View):
     def _render_form(self, request, log, session, form):
         return render(
             request,
-            'courses/partials/calendar_log_form.html',
-            {'session': session, 'form': form, 'is_edit': True,
-             'form_url': reverse('courses:calendar-log-edit', args=[session.course_id, log.id])},
+            "courses/partials/calendar_log_form.html",
+            {
+                "session": session,
+                "form": form,
+                "is_edit": True,
+                "form_url": reverse("courses:calendar-log-edit", args=[session.course_id, log.id]),
+            },
         )
 
     def get(self, request, course_id, log_id):
         log, session = _course_log_or_404(course_id, log_id)
         has_issues = log.actual_date not in (None, session.session_date) or log.problems or log.solutions
-        form = CourseCalendarLogForm(instance=log, initial={'has_issues': 'yes' if has_issues else 'no'})
+        form = CourseCalendarLogForm(instance=log, initial={"has_issues": "yes" if has_issues else "no"})
         return self._render_form(request, log, session, form)
 
     def post(self, request, course_id, log_id):
@@ -623,7 +665,7 @@ class CourseCalendarLogUpdateView(View):
         with transaction.atomic():
             # Re-flowing from the session undoes the old delay's effect
             _save_log(form, session, previous_date)
-        return HttpResponse(headers={'HX-Refresh': 'true'})
+        return HttpResponse(headers={"HX-Refresh": "true"})
 
 
 class CourseCalendarLogDeleteView(View):
@@ -639,46 +681,53 @@ class CourseCalendarLogDeleteView(View):
 
 class CourseCalendarDelayView(TemplateView):
     """Compare each logged calendar entry's scheduled date against its logged actual date"""
-    template_name = 'courses/calendar_delays.html'
+
+    template_name = "courses/calendar_delays.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        course = get_object_or_404(Course, pk=self.kwargs['course_id'])
+        course = get_object_or_404(Course, pk=self.kwargs["course_id"])
         rows = []
-        logs = CourseCalendarLog.objects.filter(calendar_entries__course=course).distinct().prefetch_related('calendar_entries__topic')
+        logs = (
+            CourseCalendarLog.objects.filter(calendar_entries__course=course)
+            .distinct()
+            .prefetch_related("calendar_entries__topic")
+        )
         for log in logs:
             for entry in log.calendar_entries.all():
                 actual = log.actual_date or entry.session_date
-                rows.append({'entry': entry, 'log': log, 'actual_date': actual,
-                             'delay': (actual - entry.session_date).days})
-        rows.sort(key=lambda row: (row['entry'].session_date, row['entry'].start_time))
-        context.update({
-            'course': course,
-            'rows': rows,
-            'delayed_count': sum(row['delay'] > 0 for row in rows),
-            'total_delay': sum(max(row['delay'], 0) for row in rows),
-            # ponytail: "current" delay = the most recent logged entry's delay
-            'current_delay': rows[-1]['delay'] if rows else 0,
-        })
+                rows.append(
+                    {"entry": entry, "log": log, "actual_date": actual, "delay": (actual - entry.session_date).days}
+                )
+        rows.sort(key=lambda row: (row["entry"].session_date, row["entry"].start_time))
+        context.update(
+            {
+                "course": course,
+                "rows": rows,
+                "delayed_count": sum(row["delay"] > 0 for row in rows),
+                "total_delay": sum(max(row["delay"], 0) for row in rows),
+                # ponytail: "current" delay = the most recent logged entry's delay
+                "current_delay": rows[-1]["delay"] if rows else 0,
+            }
+        )
         return context
 
 
 class CourseScheduleListView(ListView):
     """Display list of all schedules for a course"""
+
     model = CourseSchedule
-    template_name = 'courses/schedule_list.html'
-    context_object_name = 'schedules'
+    template_name = "courses/schedule_list.html"
+    context_object_name = "schedules"
     paginate_by = 50
 
     def get_queryset(self):
-        course_id = self.kwargs['course_id']
-        return CourseSchedule.objects.filter(
-            course_id=course_id
-        ).order_by('start_time')
+        course_id = self.kwargs["course_id"]
+        return CourseSchedule.objects.filter(course_id=course_id).order_by("start_time")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['course'] = get_object_or_404(Course, pk=self.kwargs['course_id'])
+        context["course"] = get_object_or_404(Course, pk=self.kwargs["course_id"])
         return context
 
 
@@ -692,12 +741,12 @@ class CourseScheduleCreateView(View):
 
         return render(
             request,
-            'courses/partials/schedule_form.html',
+            "courses/partials/schedule_form.html",
             {
-                'form': form,
-                'course': course,
-                'is_create': True,
-            }
+                "form": form,
+                "course": course,
+                "is_create": True,
+            },
         )
 
     def post(self, request, course_id):
@@ -706,54 +755,39 @@ class CourseScheduleCreateView(View):
         form = CourseScheduleForm(request.POST)
 
         if form.is_valid():
-            days = form.cleaned_data['days']
-            start_time = form.cleaned_data['start_time']
-            end_time = form.cleaned_data['end_time']
+            days = form.cleaned_data["days"]
+            start_time = form.cleaned_data["start_time"]
+            end_time = form.cleaned_data["end_time"]
 
             # Check if schedule already exists
-            existing = CourseSchedule.objects.filter(
-                course=course,
-                start_time=start_time,
-                end_time=end_time
-            ).exists()
+            existing = CourseSchedule.objects.filter(course=course, start_time=start_time, end_time=end_time).exists()
 
             if existing:
                 messages.warning(
-                    request,
-                    _('A schedule with this time range already exists. Please edit it to add more days.')
+                    request, _("A schedule with this time range already exists. Please edit it to add more days.")
                 )
                 return HttpResponse(status=400)
 
             # Create single schedule with all days
-            schedule = CourseSchedule.objects.create(
-                course=course,
-                days=days,
-                start_time=start_time,
-                end_time=end_time
-            )
+            schedule = CourseSchedule.objects.create(course=course, days=days, start_time=start_time, end_time=end_time)
 
             messages.success(
-                request,
-                _('Schedule created for %(days)s successfully.') % {'days': schedule.get_days_display()}
+                request, _("Schedule created for %(days)s successfully.") % {"days": schedule.get_days_display()}
             )
 
             # Return the new schedule
-            return render(
-                request,
-                'courses/partials/schedule_item.html',
-                {'schedule': schedule}
-            )
+            return render(request, "courses/partials/schedule_item.html", {"schedule": schedule})
         else:
             # Return form with errors
             return render(
                 request,
-                'courses/partials/schedule_form.html',
+                "courses/partials/schedule_form.html",
                 {
-                    'form': form,
-                    'course': course,
-                    'is_create': True,
+                    "form": form,
+                    "course": course,
+                    "is_create": True,
                 },
-                status=400
+                status=400,
             )
 
 
@@ -766,21 +800,23 @@ class CourseScheduleUpdateView(View):
         schedule = get_object_or_404(CourseSchedule, pk=schedule_id, course=course)
 
         # Initialize form with current schedule data
-        form = CourseScheduleForm(initial={
-            'days': [str(d) for d in schedule.days],
-            'start_time': schedule.start_time.strftime('%H:%M'),
-            'end_time': schedule.end_time.strftime('%H:%M'),
-        })
+        form = CourseScheduleForm(
+            initial={
+                "days": [str(d) for d in schedule.days],
+                "start_time": schedule.start_time.strftime("%H:%M"),
+                "end_time": schedule.end_time.strftime("%H:%M"),
+            }
+        )
 
         return render(
             request,
-            'courses/partials/schedule_form.html',
+            "courses/partials/schedule_form.html",
             {
-                'form': form,
-                'course': course,
-                'schedule': schedule,
-                'is_create': False,
-            }
+                "form": form,
+                "course": course,
+                "schedule": schedule,
+                "is_create": False,
+            },
         )
 
     def post(self, request, course_id, schedule_id):
@@ -790,34 +826,30 @@ class CourseScheduleUpdateView(View):
         form = CourseScheduleForm(request.POST)
 
         if form.is_valid():
-            days = form.cleaned_data['days']
-            start_time = form.cleaned_data['start_time']
-            end_time = form.cleaned_data['end_time']
+            days = form.cleaned_data["days"]
+            start_time = form.cleaned_data["start_time"]
+            end_time = form.cleaned_data["end_time"]
 
             schedule.days = days
             schedule.start_time = start_time
             schedule.end_time = end_time
             schedule.save()
-            messages.success(request, _('Schedule updated successfully.'))
+            messages.success(request, _("Schedule updated successfully."))
 
             # Return the updated schedule row
-            return render(
-                request,
-                'courses/partials/schedule_item.html',
-                {'schedule': schedule}
-            )
+            return render(request, "courses/partials/schedule_item.html", {"schedule": schedule})
         else:
             # Return form with errors
             return render(
                 request,
-                'courses/partials/schedule_form.html',
+                "courses/partials/schedule_form.html",
                 {
-                    'form': form,
-                    'course': course,
-                    'schedule': schedule,
-                    'is_create': False,
+                    "form": form,
+                    "course": course,
+                    "schedule": schedule,
+                    "is_create": False,
                 },
-                status=400
+                status=400,
             )
 
 
@@ -830,7 +862,7 @@ class CourseScheduleDeleteView(View):
         schedule = get_object_or_404(CourseSchedule, pk=schedule_id, course=course)
         schedule.delete()
 
-        messages.success(request, _('Schedule deleted successfully.'))
+        messages.success(request, _("Schedule deleted successfully."))
         return HttpResponse(status=200)
 
 
@@ -874,19 +906,21 @@ def _assign_topics(course, after=None, keep_logged=False):
     sessions = CourseCalendar.objects.filter(course=course, logs__isnull=True)
     if after:
         sessions = sessions.filter(session_date__gt=after)
-    sessions = list(sessions.order_by('session_date', 'start_time'))
-    kept_topic_ids = CourseCalendar.objects.filter(course=course, topic__isnull=False).exclude(
-        pk__in=[session.pk for session in sessions]
-    ).values('topic_id')
-    topics = list(Topic.objects.filter(course=course).exclude(pk__in=kept_topic_ids).order_by('order'))
+    sessions = list(sessions.order_by("session_date", "start_time"))
+    kept_topic_ids = (
+        CourseCalendar.objects.filter(course=course, topic__isnull=False)
+        .exclude(pk__in=[session.pk for session in sessions])
+        .values("topic_id")
+    )
+    topics = list(Topic.objects.filter(course=course).exclude(pk__in=kept_topic_ids).order_by("order"))
     for session, topic in zip(sessions, topics):
         if session.topic_id != topic.id:
             session.topic = topic
-            session.save(update_fields=['topic'])
-    for session in sessions[len(topics):]:
+            session.save(update_fields=["topic"])
+    for session in sessions[len(topics) :]:
         if session.topic_id is not None:
             session.topic = None
-            session.save(update_fields=['topic'])
+            session.save(update_fields=["topic"])
     _assign_ideal_topics(course, keep_logged)
 
 
@@ -895,17 +929,20 @@ def _assign_ideal_topics(course, keep_logged=False):
     by order, ignoring logs. Slots are fixed by schedules and non-working days, so
     delays never change this; only schedule or topic edits do. With `keep_logged`,
     logged sessions keep the ideal topic they had."""
-    topics = list(Topic.objects.filter(course=course).order_by('order'))
-    sessions = CourseCalendar.objects.filter(course=course).exclude(EARLY_LOGGED).annotate(
-        has_logs=Exists(CourseCalendarLog.objects.filter(calendar_entries=OuterRef('pk')))
-    ).order_by('session_date', 'start_time')
+    topics = list(Topic.objects.filter(course=course).order_by("order"))
+    sessions = (
+        CourseCalendar.objects.filter(course=course)
+        .exclude(EARLY_LOGGED)
+        .annotate(has_logs=Exists(CourseCalendarLog.objects.filter(calendar_entries=OuterRef("pk"))))
+        .order_by("session_date", "start_time")
+    )
     for i, session in enumerate(sessions):
         ideal = topics[i] if i < len(topics) else None
         if keep_logged and session.has_logs:
             continue
         if session.ideal_topic_id != (ideal and ideal.id):
             session.ideal_topic = ideal
-            session.save(update_fields=['ideal_topic'])
+            session.save(update_fields=["ideal_topic"])
 
 
 def _reflow_topics(course):
@@ -925,9 +962,9 @@ def _regenerate_after(course, after):
 def _rebuild_after(course, after):
     """Rebuild every schedule's unlogged sessions after `after` and re-flow the remaining topics onto them."""
     period = course.period
-    non_working_days = set(NonWorkingDay.objects.filter(
-        date__range=(period.start_date, period.end_date)
-    ).values_list('date', flat=True))
+    non_working_days = set(
+        NonWorkingDay.objects.filter(date__range=(period.start_date, period.end_date)).values_list("date", flat=True)
+    )
     for schedule in course.schedules.all():
         _generate_calendar_sessions(course, schedule, non_working_days, after=after)
     _assign_topics(course, after=after)
@@ -940,16 +977,22 @@ class CourseCalendarGenerateView(View):
     def post(self, request, course_id, schedule_id):
         course = get_object_or_404(Course, pk=course_id)
         schedule = get_object_or_404(CourseSchedule, pk=schedule_id, course=course)
-        non_working_days = set(NonWorkingDay.objects.filter(
-            date__range=(course.period.start_date, course.period.end_date)
-        ).values_list('date', flat=True))
+        non_working_days = set(
+            NonWorkingDay.objects.filter(date__range=(course.period.start_date, course.period.end_date)).values_list(
+                "date", flat=True
+            )
+        )
 
         created_count = _generate_calendar_sessions(course, schedule, non_working_days)
         _assign_topics(course)
         _replay_delays(course)
 
-        messages.success(request, ngettext('%(count)d calendar session generated.', '%(count)d calendar sessions generated.', created_count) % {'count': created_count})
-        return redirect('courses:schedule-list', course_id=course.id)
+        messages.success(
+            request,
+            ngettext("%(count)d calendar session generated.", "%(count)d calendar sessions generated.", created_count)
+            % {"count": created_count},
+        )
+        return redirect("courses:schedule-list", course_id=course.id)
 
 
 class CourseCalendarGenerateAllView(View):
@@ -957,22 +1000,28 @@ class CourseCalendarGenerateAllView(View):
 
     def post(self, request, course_id):
         course = get_object_or_404(Course, pk=course_id)
-        non_working_days = set(NonWorkingDay.objects.filter(
-            date__range=(course.period.start_date, course.period.end_date)
-        ).values_list('date', flat=True))
+        non_working_days = set(
+            NonWorkingDay.objects.filter(date__range=(course.period.start_date, course.period.end_date)).values_list(
+                "date", flat=True
+            )
+        )
 
         created_count = sum(
-            _generate_calendar_sessions(course, schedule, non_working_days)
-            for schedule in course.schedules.all()
+            _generate_calendar_sessions(course, schedule, non_working_days) for schedule in course.schedules.all()
         )
         _assign_topics(course)
         _replay_delays(course)
 
-        messages.success(request, ngettext('%(count)d calendar session generated.', '%(count)d calendar sessions generated.', created_count) % {'count': created_count})
-        return redirect('courses:calendar-list', course_id=course.id)
+        messages.success(
+            request,
+            ngettext("%(count)d calendar session generated.", "%(count)d calendar sessions generated.", created_count)
+            % {"count": created_count},
+        )
+        return redirect("courses:calendar-list", course_id=course.id)
 
 
 # ==================== SYLLABUS IMPORT VIEWS ====================
+
 
 class SyllabusUploadView(View):
     """Handle syllabus file upload and topic extraction"""
@@ -984,11 +1033,11 @@ class SyllabusUploadView(View):
 
         return render(
             request,
-            'courses/syllabus_upload.html',
+            "courses/syllabus_upload.html",
             {
-                'course': course,
-                'form': form,
-            }
+                "course": course,
+                "form": form,
+            },
         )
 
     def post(self, request, course_id):
@@ -997,63 +1046,59 @@ class SyllabusUploadView(View):
         form = SyllabusUploadForm(request.POST, request.FILES)
 
         if form.is_valid():
-            uploaded_file = request.FILES['syllabus_file']
+            uploaded_file = request.FILES["syllabus_file"]
 
             try:
                 file_content = uploaded_file.read()
                 extracted_topics = parse_syllabus_csv(file_content)
 
                 if not extracted_topics:
-                    messages.warning(request, _('No topics found in the CSV file.'))
+                    messages.warning(request, _("No topics found in the CSV file."))
                     return render(
                         request,
-                        'courses/syllabus_upload.html',
+                        "courses/syllabus_upload.html",
                         {
-                            'course': course,
-                            'form': form,
-                        }
+                            "course": course,
+                            "form": form,
+                        },
                     )
 
                 SyllabusDraftTopic.objects.filter(course=course).delete()
-                SyllabusDraftTopic.objects.bulk_create([
-                    SyllabusDraftTopic(course=course, **topic)
-                    for topic in extracted_topics
-                ])
+                SyllabusDraftTopic.objects.bulk_create(
+                    [SyllabusDraftTopic(course=course, **topic) for topic in extracted_topics]
+                )
 
                 # Redirect to review page
-                return redirect('courses:syllabus-review', course_id=course_id)
+                return redirect("courses:syllabus-review", course_id=course_id)
 
             except SyllabusCSVError as e:
                 messages.error(request, str(e))
                 return render(
                     request,
-                    'courses/syllabus_upload.html',
+                    "courses/syllabus_upload.html",
                     {
-                        'course': course,
-                        'form': form,
-                    }
+                        "course": course,
+                        "form": form,
+                    },
                 )
             except Exception as e:
-                messages.error(
-                    request,
-                    _('Error processing file: %(error)s') % {'error': e}
-                )
+                messages.error(request, _("Error processing file: %(error)s") % {"error": e})
                 return render(
                     request,
-                    'courses/syllabus_upload.html',
+                    "courses/syllabus_upload.html",
                     {
-                        'course': course,
-                        'form': form,
-                    }
+                        "course": course,
+                        "form": form,
+                    },
                 )
         else:
             return render(
                 request,
-                'courses/syllabus_upload.html',
+                "courses/syllabus_upload.html",
                 {
-                    'course': course,
-                    'form': form,
-                }
+                    "course": course,
+                    "form": form,
+                },
             )
 
 
@@ -1068,19 +1113,19 @@ class SyllabusReviewView(View):
         draft_topics = list(SyllabusDraftTopic.objects.filter(course=course))
 
         if not draft_topics:
-            messages.error(request, _('No draft topics found. Please upload a syllabus file.'))
-            return redirect('courses:syllabus-upload', course_id=course_id)
+            messages.error(request, _("No draft topics found. Please upload a syllabus file."))
+            return redirect("courses:syllabus-upload", course_id=course_id)
 
         form = TopicReviewForm(draft_topics)
 
         return render(
             request,
-            'courses/syllabus_review.html',
+            "courses/syllabus_review.html",
             {
-                'course': course,
-                'form': form,
-                'topic_count': len(draft_topics),
-            }
+                "course": course,
+                "form": form,
+                "topic_count": len(draft_topics),
+            },
         )
 
     def post(self, request, course_id):
@@ -1091,8 +1136,8 @@ class SyllabusReviewView(View):
         draft_topics = list(SyllabusDraftTopic.objects.filter(course=course))
 
         if not draft_topics:
-            messages.error(request, _('No draft topics found.'))
-            return redirect('courses:syllabus-upload', course_id=course_id)
+            messages.error(request, _("No draft topics found."))
+            return redirect("courses:syllabus-upload", course_id=course_id)
 
         form = TopicReviewForm(draft_topics, request.POST)
 
@@ -1100,23 +1145,23 @@ class SyllabusReviewView(View):
             reviewed_topics = form.get_reviewed_topics()
 
             if not reviewed_topics:
-                messages.warning(request, _('No topics selected for import.'))
-                return redirect('courses:syllabus-review', course_id=course_id)
+                messages.warning(request, _("No topics selected for import."))
+                return redirect("courses:syllabus-review", course_id=course_id)
 
             # Save the reviewer's edits back onto the draft rows, so they survive
             # a failed import (see except blocks below) instead of reverting to the raw CSV values
             SyllabusDraftTopic.objects.bulk_update(
                 [
                     SyllabusDraftTopic(
-                        pk=topic_data['draft_id'],
-                        code=topic_data['code'],
-                        name=topic_data['name'],
-                        description=topic_data['description'],
-                        order=topic_data['order'],
+                        pk=topic_data["draft_id"],
+                        code=topic_data["code"],
+                        name=topic_data["name"],
+                        description=topic_data["description"],
+                        order=topic_data["order"],
                     )
                     for topic_data in reviewed_topics
                 ],
-                ['code', 'name', 'description', 'order']
+                ["code", "name", "description", "order"],
             )
 
             # Create topics (all-or-nothing so a duplicate order doesn't leave a partial import)
@@ -1125,10 +1170,10 @@ class SyllabusReviewView(View):
                     for topic_data in reviewed_topics:
                         Topic.objects.create(
                             course=course,
-                            code=topic_data['code'],
-                            name=topic_data['name'],
-                            description=topic_data['description'],
-                            order=topic_data['order']
+                            code=topic_data["code"],
+                            name=topic_data["name"],
+                            description=topic_data["description"],
+                            order=topic_data["order"],
                         )
                 created_count = len(reviewed_topics)
                 _reflow_topics(course)
@@ -1138,45 +1183,51 @@ class SyllabusReviewView(View):
 
                 messages.success(
                     request,
-                    ngettext('Successfully imported %(count)d topic from syllabus!', 'Successfully imported %(count)d topics from syllabus!', created_count) % {'count': created_count}
+                    ngettext(
+                        "Successfully imported %(count)d topic from syllabus!",
+                        "Successfully imported %(count)d topics from syllabus!",
+                        created_count,
+                    )
+                    % {"count": created_count},
                 )
 
-                return redirect('courses:topic-list', course_id=course_id)
+                return redirect("courses:topic-list", course_id=course_id)
 
             except IntegrityError as e:
                 messages.error(
                     request,
-                    _('Import cancelled, no topics were saved: a topic with that order already exists (%(error)s)') % {'error': e}
+                    _("Import cancelled, no topics were saved: a topic with that order already exists (%(error)s)")
+                    % {"error": e},
                 )
                 return render(
                     request,
-                    'courses/syllabus_review.html',
+                    "courses/syllabus_review.html",
                     {
-                        'course': course,
-                        'form': form,
-                        'topic_count': len(draft_topics),
-                    }
+                        "course": course,
+                        "form": form,
+                        "topic_count": len(draft_topics),
+                    },
                 )
             except Exception as e:
-                messages.error(request, _('Error creating topics: %(error)s') % {'error': e})
+                messages.error(request, _("Error creating topics: %(error)s") % {"error": e})
                 return render(
                     request,
-                    'courses/syllabus_review.html',
+                    "courses/syllabus_review.html",
                     {
-                        'course': course,
-                        'form': form,
-                        'topic_count': len(draft_topics),
-                    }
+                        "course": course,
+                        "form": form,
+                        "topic_count": len(draft_topics),
+                    },
                 )
         else:
             return render(
                 request,
-                'courses/syllabus_review.html',
+                "courses/syllabus_review.html",
                 {
-                    'course': course,
-                    'form': form,
-                    'topic_count': len(draft_topics),
-                }
+                    "course": course,
+                    "form": form,
+                    "topic_count": len(draft_topics),
+                },
             )
 
 
@@ -1186,5 +1237,5 @@ class SyllabusReviewCancelView(View):
     def post(self, request, course_id):
         course = get_object_or_404(Course, pk=course_id)
         SyllabusDraftTopic.objects.filter(course=course).delete()
-        messages.info(request, _('Syllabus import cancelled.'))
-        return redirect('courses:topic-list', course_id=course_id)
+        messages.info(request, _("Syllabus import cancelled."))
+        return redirect("courses:topic-list", course_id=course_id)

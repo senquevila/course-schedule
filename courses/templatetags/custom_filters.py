@@ -6,7 +6,7 @@ register = template.Library()
 @register.filter
 def add(value, arg):
     """Concatenate two strings. Usage: "topic_"|add:idx|add:"_code" """
-    return f'{value}{arg}'
+    return f"{value}{arg}"
 
 
 @register.filter
@@ -15,7 +15,7 @@ def get_field(form, name):
     try:
         return form[name]
     except KeyError:
-        return ''
+        return ""
 
 
 @register.filter
@@ -27,4 +27,4 @@ def endswith(value, arg):
 @register.filter
 def is_code_field(value):
     """Check if this is a code field (ends with _code)"""
-    return str(value).endswith('_code')
+    return str(value).endswith("_code")
