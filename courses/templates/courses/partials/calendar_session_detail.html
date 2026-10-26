@@ -15,10 +15,6 @@
             <th>{% translate "Date" %}</th>
             <td>{% blocktranslate with day=session.session_date|date:"l"|capfirst start=session.start_time|time:"H:i" end=session.end_time|time:"H:i" %}{{ day }} from {{ start }} to {{ end }}{% endblocktranslate %}</td>
         </tr>
-        <tr class="detail-row-minor">
-            <th>{% translate "Ideal topic" %}</th>
-            <td>{{ session.ideal_topic.name|default:"—" }}{% if session.ideal_topic_id != session.topic_id %} <span class="badge badge-pdf">{% translate "Delayed" %}</span>{% endif %}</td>
-        </tr>
     </table>
 
     {% if others %}
@@ -36,6 +32,13 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
+
+    <table class="detail-table mt-3">
+        <tr class="detail-row-minor">
+            <th>{% translate "Ideal topic" %}</th>
+            <td>{{ session.ideal_topic.name|default:"—" }}{% if session.ideal_topic_id != session.topic_id %} <span class="badge badge-pdf">{% translate "Delayed" %}</span>{% endif %}</td>
+        </tr>
+    </table>
 
     {% with logs=session.logs.all %}
     {% if logs %}
