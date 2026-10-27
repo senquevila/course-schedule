@@ -59,6 +59,9 @@
     {% endwith %}
 
     <div class="modal-footer">
+        {% if session.topic_id %}
+        <a class="btn btn-secondary" href="{% url 'courses:calendar-log-list' session.course_id %}?topic={{ session.topic_id }}">{% translate "View detail logs" %}</a>
+        {% endif %}
         <button type="button" class="btn btn-accent"
                 hx-get="{% url 'courses:calendar-log-create' session.course_id session.id %}"
                 hx-target="#modal-body">{% translate "Add Log" %}</button>

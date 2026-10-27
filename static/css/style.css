@@ -1167,7 +1167,7 @@ tbody tr.log-row:hover td {
     color: var(--ink-soft);
 }
 
-.log-row {
+div.log-row {
     display: flex;
     gap: 0.5rem;
 }

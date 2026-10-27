@@ -476,6 +476,15 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         self.assertEqual(statuses, {5: LogStatus.OK, 12: LogStatus.DELAYED, 19: LogStatus.MANY, 26: LogStatus.NONE})
         self.assertIn("--status-delayed-bg", statuses[12].style)
 
+    def test_log_list_filters_by_topic(self):
+        self.log(5, has_issues="no")
+        self.log(12, has_issues="no")
+        topic = CourseCalendarLog.objects.get(calendar_entries__session_date__day=12).calendar_entries.get().topic
+        list_url = reverse("courses:calendar-log-list", args=[self.course.id])
+        logs = self.client.get(list_url, {"topic": topic.id}).context["logs"]
+        self.assertEqual([e.topic for log in logs for e in log.calendar_entries.all()], [topic])
+        self.assertEqual(len(self.client.get(list_url).context["logs"]), 2)
+
     def test_edit_and_delete_log(self):
         from schedule.models import CourseCalendar
 

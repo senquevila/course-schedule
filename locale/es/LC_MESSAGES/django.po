@@ -926,3 +926,9 @@ msgstr "Problema"
 
 msgid "Solution"
 msgstr "Solución"
+
+msgid "All topics"
+msgstr "Todos los temas"
+
+msgid "View detail logs"
+msgstr "Ver registros detallados"

@@ -631,12 +631,15 @@ class CourseCalendarLogListView(TemplateView):
             .distinct()
             .prefetch_related("calendar_entries__topic")
         )
+        topic_id = self.request.GET.get("topic", "")
+        if topic_id.isdigit():
+            logs = logs.filter(calendar_entries__topic_id=topic_id)
         logs = sorted(logs, key=lambda log: min((e.session_date, e.start_time) for e in log.calendar_entries.all()))
         for log in logs:
             scheduled = min(e.session_date for e in log.calendar_entries.all())
             actual = log.actual_date or scheduled
             log.status = "early" if actual < scheduled else "late" if actual > scheduled else "on-time"
-        context.update({"course": course, "logs": logs})
+        context.update({"course": course, "logs": logs, "topics": course.topics.all(), "topic_id": topic_id})
         return context
 
 

@@ -18,6 +18,16 @@
     </div>
 </div>
 
+<form method="get" class="mb-4">
+    <label for="topic-filter">{% translate "Topic" %}</label>
+    <select id="topic-filter" name="topic" class="form-select" onchange="this.form.submit()">
+        <option value="">{% translate "All topics" %}</option>
+        {% for topic in topics %}
+        <option value="{{ topic.id }}"{% if topic_id == topic.id|stringformat:"d" %} selected{% endif %}>{{ topic }}</option>
+        {% endfor %}
+    </select>
+</form>
+
 {% if logs %}
 <table>
     <thead>
