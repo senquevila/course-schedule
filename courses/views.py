@@ -101,33 +101,13 @@ class TopicListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["course"] = get_object_or_404(Course, pk=self.kwargs["course_id"])
-        context.update(_topic_progress(context["course"], timezone.localdate()))
         return context
 
 
-def _topic_progress(course, today):
-    """Where the course is (latest session up to today) vs. where it should be
-    without delays. Topics pushed past the period's last slot by delays have no
-    session left: those are lost."""
-    topics = list(Topic.objects.filter(course=course).order_by("order"))
-    last = (
-        CourseCalendar.objects.filter(course=course, session_date__lte=today)
-        .exclude(EARLY_LOGGED)
-        .select_related("topic", "ideal_topic")
-        .order_by("-session_date", "-start_time")
-        .first()
-    )
-    scheduled = set(
-        CourseCalendar.objects.filter(course=course, topic__isnull=False).values_list("topic_id", flat=True)
-    )
-    current = last and last.topic
-    ideal = last and last.ideal_topic
-    return {
-        "current_topic": current,
-        "ideal_topic": ideal,
-        "topics_behind": topics.index(ideal) - topics.index(current) if current and ideal else 0,
-        "lost_topics": [t for t in topics if t.id not in scheduled],
-    }
+def _lost_topics(course):
+    """Topics pushed past the period's last slot by delays: they have no session left"""
+    scheduled = CourseCalendar.objects.filter(course=course, topic__isnull=False).values("topic_id")
+    return Topic.objects.filter(course=course).exclude(id__in=scheduled).order_by("order")
 
 
 class TopicCreateView(View):
@@ -480,7 +460,7 @@ class CourseCalendarListView(TemplateView):
                 "current_year": year,
                 "current_month": month,
                 "log_statuses": LogStatus,
-                "lost_topics": _topic_progress(course, today)["lost_topics"],
+                "lost_topics": _lost_topics(course),
             }
         )
         return context
