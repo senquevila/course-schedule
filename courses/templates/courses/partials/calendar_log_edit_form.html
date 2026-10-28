@@ -1,0 +1,25 @@
+{% load i18n %}
+<div class="modal-header">
+    <h2 class="modal-title">{% blocktranslate with date=session.session_date %}Edit log for {{ date }}{% endblocktranslate %}</h2>
+    <button class="modal-close" onclick="closeModal()">×</button>
+</div>
+
+<form method="POST"
+      hx-post="{% url 'courses:calendar-log-edit' session.course_id log.id %}"
+      hx-target="#modal-body">
+    {% csrf_token %}
+
+    {% for field in form %}
+    <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {% if field.errors %}<div class="form-error">{{ field.errors.0 }}</div>{% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">{% translate "Cancel" %}</button>
+        <button type="submit" class="btn btn-primary">{% translate "Save Changes" %}</button>
+    </div>
+</form>

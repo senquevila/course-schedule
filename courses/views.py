@@ -17,6 +17,7 @@ from django.views.generic import ListView, TemplateView
 from schedule.models import EARLY_LOGGED, CourseCalendar, CourseCalendarLog, CourseSchedule, LogStatus, NonWorkingDay
 
 from .forms import (
+    CourseCalendarLogEditForm,
     CourseCalendarLogForm,
     CourseScheduleForm,
     MaterialForm,
@@ -553,7 +554,7 @@ def _save_log(form, session, previous_date=None):
     """Save a valid CourseCalendarLogForm for `session` and re-flow the calendar after it.
     `previous_date` is an edited log's old actual date, so its old effect is undone too."""
     log = form.save(commit=False)
-    if form.cleaned_data["has_issues"] == "no":
+    if form.cleaned_data.get("has_issues") == "no":
         # Happened as scheduled: record the session's own date, nothing else
         log.actual_date = session.session_date
         log.problems = log.solutions = ""
@@ -629,25 +630,19 @@ class CourseCalendarLogUpdateView(View):
     def _render_form(self, request, log, session, form):
         return render(
             request,
-            "courses/partials/calendar_log_form.html",
-            {
-                "session": session,
-                "form": form,
-                "is_edit": True,
-                "form_url": reverse("courses:calendar-log-edit", args=[session.course_id, log.id]),
-            },
+            "courses/partials/calendar_log_edit_form.html",
+            {"log": log, "session": session, "form": form},
         )
 
     def get(self, request, course_id, log_id):
         log, session = _course_log_or_404(course_id, log_id)
-        has_issues = log.actual_date not in (None, session.session_date) or log.problems or log.solutions
-        form = CourseCalendarLogForm(instance=log, initial={"has_issues": "yes" if has_issues else "no"})
+        form = CourseCalendarLogEditForm(instance=log, initial={"actual_date": log.actual_date or session.session_date})
         return self._render_form(request, log, session, form)
 
     def post(self, request, course_id, log_id):
         log, session = _course_log_or_404(course_id, log_id)
         previous_date = log.actual_date  # the form overwrites it on validation
-        form = CourseCalendarLogForm(request.POST, instance=log)
+        form = CourseCalendarLogEditForm(request.POST, instance=log)
         if not form.is_valid():
             return self._render_form(request, log, session, form)
         with transaction.atomic():

@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from schedule.models import CourseCalendarLog
 
-from .models import Assignature, Course, Material, Period, Topic
+from .models import Assignature, Course, Material, Period, SyllabusDraftTopic, Topic
 from .syllabus_parser import SyllabusCSVError, parse_syllabus_csv
 
 
@@ -127,7 +127,7 @@ T03,Control Structures,,3"""
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("review", response.url)
-        self.assertEqual(len(self.client.session["extracted_topics"]), 3)
+        self.assertEqual(SyllabusDraftTopic.objects.filter(course=self.course).count(), 3)
 
     def test_upload_non_csv_extension_rejected(self):
         file = SimpleUploadedFile("syllabus.txt", b"1. Topic", content_type="text/plain")
@@ -155,6 +155,16 @@ T01,Introduction,Basic,1"""
         self.assertContains(response, "File size must not exceed 10MB")
 
 
+def draft_keyed(data, course):
+    """Re-key review POST data from topic_<position>_* to topic_<draft id>_*, as the form expects"""
+    ids = list(SyllabusDraftTopic.objects.filter(course=course).values_list("pk", flat=True))
+    keyed = {}
+    for key, value in data.items():
+        _, position, field = key.split("_", 2)
+        keyed[f"topic_{ids[int(position)]}_{field}"] = value
+    return keyed
+
+
 class SyllabusReviewViewTestCase(TestCase):
     """Test the syllabus review and import functionality"""
 
@@ -173,13 +183,13 @@ class SyllabusReviewViewTestCase(TestCase):
 
         self.review_url = reverse("courses:syllabus-review", args=[self.course.id])
 
-        session = self.client.session
-        session["extracted_topics"] = [
-            {"code": "T01", "name": "Introduction to Programming", "description": "", "order": 1},
-            {"code": "T02", "name": "Variables and Data Types", "description": "", "order": 2},
-            {"code": "T03", "name": "Control Structures", "description": "", "order": 3},
-        ]
-        session.save()
+        SyllabusDraftTopic.objects.bulk_create(
+            [
+                SyllabusDraftTopic(course=self.course, code="T01", name="Introduction to Programming", order=1),
+                SyllabusDraftTopic(course=self.course, code="T02", name="Variables and Data Types", order=2),
+                SyllabusDraftTopic(course=self.course, code="T03", name="Control Structures", order=3),
+            ]
+        )
 
     def test_get_review_form(self):
         response = self.client.get(self.review_url)
@@ -205,7 +215,7 @@ class SyllabusReviewViewTestCase(TestCase):
             "topic_2_order": "3",
         }
 
-        response = self.client.post(self.review_url, data)
+        response = self.client.post(self.review_url, draft_keyed(data, self.course))
 
         self.assertEqual(response.status_code, 302)
 
@@ -217,17 +227,14 @@ class SyllabusReviewViewTestCase(TestCase):
         self.assertEqual(t01.description, "Learn the basics")
 
     def test_import_with_no_topics_selected(self):
-        data = {
-            "topic_0_include": "",
-            "topic_0_code": "T01",
-            "topic_0_name": "Introduction to Programming",
-            "topic_0_description": "",
-            "topic_0_order": "1",
-        }
+        data = {}
+        for i, code in enumerate(["T01", "T02", "T03"]):
+            data.update({f"topic_{i}_include": "", f"topic_{i}_code": code, f"topic_{i}_name": code})
+            data.update({f"topic_{i}_description": "", f"topic_{i}_order": str(i + 1)})
 
-        response = self.client.post(self.review_url, data)
+        response = self.client.post(self.review_url, draft_keyed(data, self.course))
 
-        self.assertEqual(response.status_code, 200)
+        self.assertRedirects(response, self.review_url)
         topics = Topic.objects.filter(course=self.course)
         self.assertEqual(topics.count(), 0)
 
@@ -250,7 +257,7 @@ class SyllabusReviewViewTestCase(TestCase):
             "topic_2_description": "",
         }
 
-        self.client.post(self.review_url, data)
+        self.client.post(self.review_url, draft_keyed(data, self.course))
 
         topics = Topic.objects.filter(course=self.course).order_by("order")
         self.assertEqual(list(topics.values_list("name", flat=True)), ["First Topic", "Second Topic", "Third Topic"])
@@ -288,16 +295,16 @@ T05,Data Structures,,5"""
 
         review_url = reverse("courses:syllabus-review", args=[self.course.id])
 
-        extracted = self.client.session["extracted_topics"]
-        self.assertEqual(len(extracted), 5)
+        drafts = SyllabusDraftTopic.objects.filter(course=self.course)
+        self.assertEqual(len(drafts), 5)
 
         data = {}
-        for i, topic in enumerate(extracted):
-            data[f"topic_{i}_include"] = "on"
-            data[f"topic_{i}_code"] = topic["code"]
-            data[f"topic_{i}_name"] = topic["name"]
-            data[f"topic_{i}_description"] = topic["description"]
-            data[f"topic_{i}_order"] = str(topic["order"])
+        for draft in drafts:
+            data[f"topic_{draft.pk}_include"] = "on"
+            data[f"topic_{draft.pk}_code"] = draft.code
+            data[f"topic_{draft.pk}_name"] = draft.name
+            data[f"topic_{draft.pk}_description"] = draft.description or ""
+            data[f"topic_{draft.pk}_order"] = str(draft.order)
 
         response = self.client.post(review_url, data)
         self.assertEqual(response.status_code, 302)
@@ -334,7 +341,7 @@ T02,Topic Two,,2"""
             "topic_1_order": "2",
         }
 
-        self.client.post(review_url, data)
+        self.client.post(review_url, draft_keyed(data, self.course))
 
         topic = Topic.objects.get(code="T01")
         self.assertEqual(topic.name, "Modified Topic One")
@@ -454,8 +461,11 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         self.assertEqual([o.topic.name for o in detail.context["others"]], ["T3"])
 
         log = CourseCalendarLog.objects.get()
-        self.client.post(reverse("courses:calendar-log-edit", args=[self.course.id, log.id]), {"has_issues": "no"})
+        edit_url = reverse("courses:calendar-log-edit", args=[self.course.id, log.id])
+        self.client.post(edit_url, {"actual_date": ""})
         self.assertEqual(self.topics_by_day(), {5: "T1", 12: "T2", 19: "T3", 26: "T4"})
+        # An "as scheduled" log (no actual date) shows its session date in the edit form
+        self.assertContains(self.client.get(edit_url), 'value="2026-09-19"')
 
     def test_delays_view(self):
         self.log(5, has_issues="no")
@@ -494,14 +504,14 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         self.assertEqual(list(self.client.get(list_url).context["logs"]), [log])
 
         edit_url = reverse("courses:calendar-log-edit", args=[self.course.id, log.id])
-        self.assertEqual(self.client.get(edit_url).status_code, 200)
-        response = self.client.post(edit_url, {"has_issues": "no"})
+        self.assertContains(self.client.get(edit_url, HTTP_ACCEPT_LANGUAGE="es"), 'value="2026-09-19"')
+        response = self.client.post(edit_url, {"actual_date": "2026-09-12", "problems": "rain"})
         self.assertEqual(response["HX-Refresh"], "true")
         log.refresh_from_db()
-        self.assertEqual(log.actual_date, date(2026, 9, 12))
+        self.assertEqual((log.actual_date, log.problems), (date(2026, 9, 12), "rain"))
         self.assertEqual(self.topics_by_day(), {5: "T1", 12: "T2", 19: "T3", 26: "T4"})
 
-        self.client.post(edit_url, {"has_issues": "yes", "actual_date": "2026-09-19"})
+        self.client.post(edit_url, {"actual_date": "2026-09-19"})
         self.assertEqual(self.topics_by_day(), {5: "T1", 12: "T2", 19: "T2", 26: "T3"})
 
         self.client.delete(reverse("courses:calendar-log-delete", args=[self.course.id, log.id]))

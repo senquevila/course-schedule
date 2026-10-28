@@ -932,3 +932,6 @@ msgstr "Todos los temas"
 
 msgid "View detail logs"
 msgstr "Ver registros detallados"
+
+msgid "Edit log for %(date)s"
+msgstr "Editar registro del %(date)s"

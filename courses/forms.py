@@ -219,7 +219,13 @@ class CourseCalendarLogForm(forms.ModelForm):
             "solutions": _("Solutions"),
         }
         widgets = {
-            "actual_date": forms.DateInput(attrs={"class": "form-input", "type": "date"}),
+            "actual_date": forms.DateInput(format="%Y-%m-%d", attrs={"class": "form-input", "type": "date"}),
             "problems": forms.Textarea(attrs={"class": "form-textarea", "rows": 2}),
             "solutions": forms.Textarea(attrs={"class": "form-textarea", "rows": 2}),
         }
+
+
+class CourseCalendarLogEditForm(CourseCalendarLogForm):
+    """Edit a log's values directly, without the 'How did it go?' toggle"""
+
+    has_issues = None
