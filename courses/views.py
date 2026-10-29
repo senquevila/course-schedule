@@ -469,11 +469,16 @@ class CourseCalendarListView(TemplateView):
 
 def _group_by_hour(sessions):
     """Collapse sessions sharing an hour (topics taught early land on another's slot)
-    into the slot's own session, carrying the rest in `others`."""
+    into the slot's own session, carrying the rest in `others`. Delay lines stay apart:
+    they render without a badge, so topics grouped under one would be hidden."""
     by_hour = {}
-    for session in sessions:
-        by_hour.setdefault(session.start_time, []).append(session)
     grouped = []
+    for session in sessions:
+        if session.is_delay:
+            session.others = []
+            grouped.append(session)
+        else:
+            by_hour.setdefault(session.start_time, []).append(session)
     for group in by_hour.values():
         group.sort(key=lambda session: session.early_date is not None)  # the slot's own session first
         group[0].others = group[1:]

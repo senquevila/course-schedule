@@ -425,6 +425,13 @@ class CourseCalendarLogCreateViewTestCase(TestCase):
         delays = {s.session_date.day: s.is_delay for week in response.context["weeks"] for _, day in week for s in day}
         self.assertEqual(delays, {5: False, 12: False, 19: True, 26: False})
 
+    def test_early_topic_on_delay_day_keeps_badge(self):
+        self.log(12, has_issues="yes", actual_date="2026-09-19")
+        self.log(26, has_issues="yes", actual_date="2026-09-19")
+        response = self.client.get(reverse("courses:calendar-list", args=[self.course.id]), {"year": 2026, "month": 9})
+        day19 = [s for week in response.context["weeks"] for d, day in week if d == 19 for s in day]
+        self.assertEqual(sorted((s.is_delay, s.topic.name) for s in day19), [(False, "T3"), (True, "T2")])
+
     def test_regenerate_keeps_delays(self):
         self.log(12, has_issues="yes", actual_date="2026-09-19")
         self.client.post(reverse("courses:calendar-generate", args=[self.course.id]))
