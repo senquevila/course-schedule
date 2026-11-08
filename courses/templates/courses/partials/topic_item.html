@@ -1,7 +1,7 @@
 {% load i18n %}
 <tr id="topic-{{ topic.id }}">
     <td>{{ topic.code }}</td>
-    <td>{{ topic.name }}</td>
+    <td>{{ topic.name }}{% if topic.fixed_date %} <span class="text-muted">· {% translate "Fixed" %} {{ topic.fixed_date|date:"SHORT_DATE_FORMAT" }}</span>{% endif %}</td>
     <td>{{ topic.order }}</td>
     <td>{{ topic.description|truncatewords:10 }}</td>
     <td>

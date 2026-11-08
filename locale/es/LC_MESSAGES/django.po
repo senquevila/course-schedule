@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 02:52+0000\n"
+"POT-Creation-Date: 2026-11-08 04:12+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,156 +17,167 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: courses/forms.py:17 courses/forms.py:48 courses/forms.py:182
+#: courses/forms.py:21 courses/forms.py:48 courses/forms.py:151
 #: courses/templates/courses/materials_list.html:30
 #: courses/templates/courses/syllabus_review.html:42
 #: courses/templates/courses/topics_list.html:35
 msgid "Code"
 msgstr "Código"
 
-#: courses/forms.py:17 courses/forms.py:48 courses/forms.py:191
+#: courses/forms.py:22 courses/forms.py:49 courses/forms.py:157
 #: courses/templates/courses/materials_list.html:31
 #: courses/templates/courses/syllabus_review.html:52
 #: courses/templates/courses/topics_list.html:36
 msgid "Name"
 msgstr "Nombre"
 
-#: courses/forms.py:17 courses/forms.py:201
+#: courses/forms.py:23 courses/forms.py:165
 #: courses/templates/courses/syllabus_review.html:60
+#: courses/templates/courses/today.html:35
 #: courses/templates/courses/topics_list.html:38
 msgid "Description"
 msgstr "Descripción"
 
-#: courses/forms.py:17 courses/forms.py:211
+#: courses/forms.py:24 courses/forms.py:172
 #: courses/templates/courses/syllabus_review.html:68
 #: courses/templates/courses/topics_list.html:37
 msgid "Order"
 msgstr "Orden"
 
-#: courses/forms.py:21
+#: courses/forms.py:25
+msgid "Fixed date"
+msgstr "Fecha fija"
+
+#: courses/forms.py:27
+msgid ""
+"For exams: the topic stays on this date and is only moved by editing it here"
+msgstr ""
+"Para exámenes: el tema se queda en esta fecha y solo se mueve editándola aquí"
+
+#: courses/forms.py:29
 msgid "e.g., T01"
 msgstr "ej., T01"
 
-#: courses/forms.py:26 courses/forms.py:189
+#: courses/forms.py:30 courses/forms.py:156
 msgid "Topic name"
 msgstr "Nombre del tema"
 
-#: courses/forms.py:31
+#: courses/forms.py:32
 msgid "Description (optional)"
 msgstr "Descripción (opcional)"
 
-#: courses/forms.py:36
+#: courses/forms.py:35
 msgid "Order/sequence number"
 msgstr "Número de orden/secuencia"
 
-#: courses/forms.py:48
+#: courses/forms.py:50
 msgid "Material type"
 msgstr "Tipo de material"
 
-#: courses/forms.py:48
+#: courses/forms.py:51
 msgid "URL or path"
 msgstr "URL o ruta"
 
-#: courses/forms.py:52
+#: courses/forms.py:54
 msgid "e.g., M01"
 msgstr "ej., M01"
 
-#: courses/forms.py:57
+#: courses/forms.py:55
 msgid "Material name"
 msgstr "Nombre del material"
 
-#: courses/forms.py:66
+#: courses/forms.py:58
 msgid "URL or file path"
 msgstr "URL o ruta del archivo"
 
-#: courses/forms.py:84
+#: courses/forms.py:73
 msgid "Days of Week"
 msgstr "Días de la semana"
 
-#: courses/forms.py:85
+#: courses/forms.py:74
 msgid "Select all days this schedule applies to"
 msgstr "Selecciona todos los días a los que aplica este horario"
 
-#: courses/forms.py:99 courses/templates/courses/schedule_list.html:30
+#: courses/forms.py:85 courses/templates/courses/schedule_list.html:30
 msgid "Start Time"
 msgstr "Hora de inicio"
 
-#: courses/forms.py:108 courses/templates/courses/schedule_list.html:31
+#: courses/forms.py:89 courses/templates/courses/schedule_list.html:31
 msgid "End Time"
 msgstr "Hora de fin"
 
-#: courses/forms.py:126
+#: courses/forms.py:106
 msgid "End time must be after start time."
 msgstr "La hora de fin debe ser posterior a la hora de inicio."
 
-#: courses/forms.py:131
+#: courses/forms.py:109
 msgid "Please select at least one day."
 msgstr "Selecciona al menos un día."
 
-#: courses/forms.py:148
+#: courses/forms.py:121
 msgid "Syllabus CSV"
 msgstr "CSV del sílabo"
 
-#: courses/forms.py:149
+#: courses/forms.py:122
 msgid "Upload a CSV file with columns: code,name,description,order"
 msgstr "Sube un archivo CSV con las columnas: code,name,description,order"
 
-#: courses/forms.py:158
+#: courses/forms.py:131
 msgid "Only .csv files are supported"
 msgstr "Solo se admiten archivos .csv"
 
-#: courses/forms.py:161
+#: courses/forms.py:134
 msgid "File size must not exceed 10MB"
 msgstr "El archivo no debe superar los 10MB"
 
-#: courses/forms.py:199
+#: courses/forms.py:163
 msgid "Topic description (optional)"
 msgstr "Descripción del tema (opcional)"
 
-#: courses/forms.py:219
+#: courses/forms.py:178
 msgid "Include this topic"
 msgstr "Incluir este tema"
 
-#: courses/forms.py:253
+#: courses/forms.py:215
 msgid "No problem"
 msgstr "Sin problemas"
 
-#: courses/forms.py:253
+#: courses/forms.py:215
 msgid "I have issues"
 msgstr "Tuve problemas"
 
-#: courses/forms.py:256
+#: courses/forms.py:218
 msgid "How did it go?"
 msgstr "¿Cómo te fue?"
 
-#: courses/forms.py:263
+#: courses/forms.py:225
 msgid "Actual date"
 msgstr "Fecha real"
 
-#: courses/forms.py:264 courses/templates/courses/calendar_delays.html:31
-#: courses/templates/courses/calendar_logs.html:28
+#: courses/forms.py:226 courses/templates/courses/calendar_delays.html:31
+#: courses/templates/courses/calendar_logs.html:38
 msgid "Problems"
 msgstr "Problemas"
 
-#: courses/forms.py:265 courses/templates/courses/calendar_logs.html:29
+#: courses/forms.py:227 courses/templates/courses/calendar_logs.html:39
 msgid "Solutions"
 msgstr "Soluciones"
 
-#: courses/models.py:98
+#: courses/models.py:106
 msgid "Image"
 msgstr "Imagen"
 
-#: courses/models.py:99
+#: courses/models.py:107
 msgid "Video"
 msgstr "Video"
 
-#: courses/models.py:100
+#: courses/models.py:108
 msgid "Document"
 msgstr "Documento"
 
 #: courses/templates/courses/calendar_delays.html:4
 #: courses/templates/courses/calendar_delays.html:11
-#: courses/templates/courses/calendar_list.html:31
+#: courses/templates/courses/calendar_list.html:35
 msgid "Delays"
 msgstr "Retrasos"
 
@@ -187,9 +198,10 @@ msgstr "Inicio"
 #: courses/templates/courses/calendar_list.html:4
 #: courses/templates/courses/calendar_list.html:10
 #: courses/templates/courses/calendar_logs.html:10
-#: courses/templates/courses/calendar_logs.html:78
-#: courses/templates/courses/course_list.html:49
-#: courses/templates/courses/home.html:47
+#: courses/templates/courses/calendar_logs.html:91
+#: courses/templates/courses/course_list.html:48
+#: courses/templates/courses/home.html:46
+#: courses/templates/courses/today.html:53
 msgid "Calendar"
 msgstr "Calendario"
 
@@ -223,23 +235,23 @@ msgstr[0] "%(days)s día en total"
 msgstr[1] "%(days)s días en total"
 
 #: courses/templates/courses/calendar_delays.html:26
-#: courses/templates/courses/calendar_logs.html:25
+#: courses/templates/courses/calendar_logs.html:35
 msgid "Scheduled"
 msgstr "Programada"
 
 #: courses/templates/courses/calendar_delays.html:27
-#: courses/templates/courses/partials/calendar_session_detail.html:15
 msgid "Time"
 msgstr "Hora"
 
 #: courses/templates/courses/calendar_delays.html:28
-#: courses/templates/courses/calendar_logs.html:26
-#: courses/templates/courses/partials/calendar_session_detail.html:19
+#: courses/templates/courses/calendar_logs.html:22
+#: courses/templates/courses/calendar_logs.html:36
+#: courses/templates/courses/today.html:32
 msgid "Topic"
 msgstr "Tema"
 
 #: courses/templates/courses/calendar_delays.html:29
-#: courses/templates/courses/calendar_logs.html:27
+#: courses/templates/courses/calendar_logs.html:37
 msgid "Actual"
 msgstr "Real"
 
@@ -248,7 +260,7 @@ msgid "Delay (days)"
 msgstr "Retraso (días)"
 
 #: courses/templates/courses/calendar_delays.html:48
-#: courses/templates/courses/calendar_logs.html:73
+#: courses/templates/courses/calendar_logs.html:86
 msgid "No sessions logged yet."
 msgstr "Aún no hay sesiones registradas."
 
@@ -259,27 +271,29 @@ msgstr "Volver al calendario"
 #: courses/templates/courses/calendar_list.html:15
 #: courses/templates/courses/course_list.html:4
 #: courses/templates/courses/home.html:4 courses/templates/courses/home.html:8
-#: templates/base.html:6 templates/base.html:18
+#: courses/templates/courses/today.html:4 templates/base.html:6
+#: templates/base.html:18
 msgid "Course Calendar"
 msgstr "Calendario de cursos"
 
 #: courses/templates/courses/calendar_list.html:21
 msgid "Generate calendar sessions for all schedules of this course?"
-msgstr "¿Generar sesiones del calendario para todos los horarios de este curso?"
+msgstr ""
+"¿Generar sesiones del calendario para todos los horarios de este curso?"
 
 #: courses/templates/courses/calendar_list.html:22
 #: courses/templates/courses/partials/schedule_item.html:21
 msgid "Generate Calendar"
 msgstr "Generar calendario"
 
-#: courses/templates/courses/calendar_list.html:30
+#: courses/templates/courses/calendar_list.html:34
 msgid "Back to Schedule"
 msgstr "Volver al horario"
 
 #: courses/templates/courses/calendar_logs.html:4
 #: courses/templates/courses/calendar_logs.html:11
-#: courses/templates/courses/home.html:48
-#: courses/templates/courses/partials/calendar_session_detail.html:30
+#: courses/templates/courses/home.html:47
+#: courses/templates/courses/partials/calendar_session_detail.html:45
 msgid "Logs"
 msgstr "Registros"
 
@@ -287,37 +301,58 @@ msgstr "Registros"
 msgid "Session Logs"
 msgstr "Registros de sesiones"
 
-#: courses/templates/courses/calendar_logs.html:30
+#: courses/templates/courses/calendar_logs.html:24
+msgid "All topics"
+msgstr "Todos los temas"
+
+#: courses/templates/courses/calendar_logs.html:40
 #: courses/templates/courses/materials_list.html:34
 #: courses/templates/courses/schedule_list.html:33
 #: courses/templates/courses/topics_list.html:40
 msgid "Actions"
 msgstr "Acciones"
 
-#: courses/templates/courses/calendar_logs.html:46 schedule/models.py:37
+#: courses/templates/courses/calendar_logs.html:56 schedule/models.py:42
 msgid "As scheduled"
 msgstr "Según lo programado"
 
-#: courses/templates/courses/calendar_logs.html:56
+#: courses/templates/courses/calendar_logs.html:59
+#: courses/templates/courses/partials/calendar_session_detail.html:50
+msgid "Ahead"
+msgstr "Adelantado"
+
+#: courses/templates/courses/calendar_logs.html:59
+#: courses/templates/courses/partials/calendar_session_detail.html:51
+msgid "Behind"
+msgstr "Atrasado"
+
+#: courses/templates/courses/calendar_logs.html:59
+#: courses/templates/courses/partials/calendar_session_detail.html:52
+msgid "On time"
+msgstr "Al día"
+
+#: courses/templates/courses/calendar_logs.html:69
 #: courses/templates/courses/partials/material_item.html:25
 #: courses/templates/courses/partials/schedule_item.html:28
-#: courses/templates/courses/partials/topic_item.html:22
+#: courses/templates/courses/partials/topic_item.html:28
 msgid "Edit"
 msgstr "Editar"
 
-#: courses/templates/courses/calendar_logs.html:63
+#: courses/templates/courses/calendar_logs.html:76
 msgid "Delete this log? The calendar will be re-flowed from this session."
-msgstr "¿Eliminar este registro? El calendario se reorganizará a partir de esta sesión."
+msgstr ""
+"¿Eliminar este registro? El calendario se reorganizará a partir de esta "
+"sesión."
 
-#: courses/templates/courses/calendar_logs.html:64
+#: courses/templates/courses/calendar_logs.html:77
 #: courses/templates/courses/partials/material_item.html:32
 #: courses/templates/courses/partials/schedule_item.html:35
-#: courses/templates/courses/partials/topic_item.html:29
+#: courses/templates/courses/partials/topic_item.html:35
 msgid "Delete"
 msgstr "Eliminar"
 
-#: courses/templates/courses/calendar_logs.html:77
-#: courses/templates/courses/partials/calendar_log_form.html:43
+#: courses/templates/courses/calendar_logs.html:90
+#: courses/templates/courses/partials/calendar_log_form.html:40
 #: courses/templates/courses/schedule_list.html:60
 #: courses/templates/courses/topics_list.html:61
 msgid "Back"
@@ -325,7 +360,7 @@ msgstr "Volver"
 
 #: courses/templates/courses/course_list.html:4
 #: courses/templates/courses/course_list.html:9
-#: courses/templates/courses/home.html:16 templates/base.html:21
+#: courses/templates/courses/home.html:16 templates/base.html:22
 msgid "Courses"
 msgstr "Cursos"
 
@@ -342,59 +377,61 @@ msgstr "Gestiona tus cursos y accede a sus temas y horarios"
 msgid "Not assigned"
 msgstr "Sin asignar"
 
-#: courses/templates/courses/course_list.html:30
+#: courses/templates/courses/course_list.html:29
 msgid "Assignature"
 msgstr "Asignatura"
 
-#: courses/templates/courses/course_list.html:33
-#: courses/templates/courses/home.html:38
+#: courses/templates/courses/course_list.html:32
+#: courses/templates/courses/home.html:37
 msgid "Period"
 msgstr "Periodo"
 
-#: courses/templates/courses/course_list.html:36
-#: courses/templates/courses/home.html:40
+#: courses/templates/courses/course_list.html:35
+#: courses/templates/courses/home.html:39
 msgid "Instructor"
 msgstr "Docente"
 
-#: courses/templates/courses/course_list.html:39
-#: courses/templates/courses/home.html:42
+#: courses/templates/courses/course_list.html:38
+#: courses/templates/courses/home.html:41
 msgid "Location"
 msgstr "Ubicación"
 
-#: courses/templates/courses/course_list.html:42
+#: courses/templates/courses/course_list.html:41
 msgid "Weekly Hours"
 msgstr "Horas semanales"
 
-#: courses/templates/courses/course_list.html:43
+#: courses/templates/courses/course_list.html:42
 #, python-format
 msgid "%(hours)s hour"
 msgid_plural "%(hours)s hours"
 msgstr[0] "%(hours)s hora"
 msgstr[1] "%(hours)s horas"
 
-#: courses/templates/courses/course_list.html:47
+#: courses/templates/courses/course_list.html:46
 #: courses/templates/courses/home.html:17
-#: courses/templates/courses/home.html:49
+#: courses/templates/courses/home.html:48
 #: courses/templates/courses/topics_list.html:4
 #: courses/templates/courses/topics_list.html:10
 #: courses/templates/courses/topics_list.html:15
 msgid "Topics"
 msgstr "Temas"
 
-#: courses/templates/courses/course_list.html:48
-#: courses/templates/courses/home.html:50
+#: courses/templates/courses/course_list.html:47
+#: courses/templates/courses/home.html:49
 #: courses/templates/courses/schedule_list.html:4
 #: courses/templates/courses/schedule_list.html:10
 msgid "Schedule"
 msgstr "Horario"
 
-#: courses/templates/courses/course_list.html:56
+#: courses/templates/courses/course_list.html:55
 msgid ""
 "No courses yet. Create your first course in the <a href=\"/admin/\" "
 "class=\"link\">Admin Panel</a>."
-msgstr "Aún no hay cursos. Crea tu primer curso en el <a href=\"/admin/\" class=\"link\">panel de administración</a>."
+msgstr ""
+"Aún no hay cursos. Crea tu primer curso en el <a href=\"/admin/\" "
+"class=\"link\">panel de administración</a>."
 
-#: courses/templates/courses/course_list.html:61
+#: courses/templates/courses/course_list.html:60
 msgid "Back to Home"
 msgstr "Volver al inicio"
 
@@ -406,7 +443,9 @@ msgstr "Planifica, enseña y da seguimiento a cada sesión"
 msgid ""
 "Plan each course's sessions, log how each class actually went, and see where "
 "you're running behind."
-msgstr "Planifica las sesiones de cada curso, registra cómo fue realmente cada clase y detecta dónde vas atrasado."
+msgstr ""
+"Planifica las sesiones de cada curso, registra cómo fue realmente cada clase "
+"y detecta dónde vas atrasado."
 
 #: courses/templates/courses/home.html:11
 msgid "View courses"
@@ -415,6 +454,8 @@ msgstr "Ver cursos"
 #: courses/templates/courses/home.html:18
 #: courses/templates/courses/materials_list.html:4
 #: courses/templates/courses/materials_list.html:15
+#: courses/templates/courses/partials/calendar_session_detail.html:29
+#: courses/templates/courses/today.html:38
 #: courses/templates/courses/topics_list.html:39
 msgid "Materials"
 msgstr "Materiales"
@@ -431,65 +472,72 @@ msgstr "Cursos recientes"
 msgid "All courses"
 msgstr "Todos los cursos"
 
-#: courses/templates/courses/home.html:57
+#: courses/templates/courses/home.html:56
 msgid "No courses yet. Follow the steps below to set up your first one."
-msgstr "Aún no hay cursos. Sigue los pasos de abajo para configurar el primero."
+msgstr ""
+"Aún no hay cursos. Sigue los pasos de abajo para configurar el primero."
 
-#: courses/templates/courses/home.html:63
+#: courses/templates/courses/home.html:62
 msgid "Setting up a course"
 msgstr "Configurar un curso"
 
-#: courses/templates/courses/home.html:66
+#: courses/templates/courses/home.html:65
 msgid "Create a period"
 msgstr "Crea un periodo"
 
-#: courses/templates/courses/home.html:67
+#: courses/templates/courses/home.html:66
 msgid ""
 "In the <a href=\"/admin/\">admin panel</a>, add a teaching period such as "
 "Spring 2026."
-msgstr "En el <a href=\"/admin/\">panel de administración</a>, agrega un periodo lectivo, por ejemplo Primavera 2026."
+msgstr ""
+"En el <a href=\"/admin/\">panel de administración</a>, agrega un periodo "
+"lectivo, por ejemplo Primavera 2026."
 
-#: courses/templates/courses/home.html:70
+#: courses/templates/courses/home.html:69
 msgid "Create an assignature"
 msgstr "Crea una asignatura"
 
-#: courses/templates/courses/home.html:71
+#: courses/templates/courses/home.html:70
 msgid ""
 "Define the subject and its weekly hours, for example CS101 Data Structures, "
 "3 hours a week."
-msgstr "Define la materia y sus horas semanales, por ejemplo CS101 Estructuras de Datos, 3 horas por semana."
+msgstr ""
+"Define la materia y sus horas semanales, por ejemplo CS101 Estructuras de "
+"Datos, 3 horas por semana."
 
-#: courses/templates/courses/home.html:74
+#: courses/templates/courses/home.html:73
 msgid "Create a course"
 msgstr "Crea un curso"
 
-#: courses/templates/courses/home.html:75
+#: courses/templates/courses/home.html:74
 msgid "Link the assignature to a period and add the instructor and location."
 msgstr "Vincula la asignatura a un periodo y agrega el docente y la ubicación."
 
-#: courses/templates/courses/home.html:78
+#: courses/templates/courses/home.html:77
 msgid "Set up the schedule"
 msgstr "Configura el horario"
 
-#: courses/templates/courses/home.html:79
+#: courses/templates/courses/home.html:78
 msgid "Choose the days and times the course meets each week."
 msgstr "Elige los días y horas en que se imparte el curso cada semana."
 
-#: courses/templates/courses/home.html:82
+#: courses/templates/courses/home.html:81
 msgid "Add topics"
 msgstr "Agrega temas"
 
-#: courses/templates/courses/home.html:83
+#: courses/templates/courses/home.html:82
 msgid ""
 "List the course topics in the order you'll teach them, or import them from a "
 "syllabus CSV."
-msgstr "Enumera los temas del curso en el orden en que los impartirás, o impórtalos desde un CSV del sílabo."
+msgstr ""
+"Enumera los temas del curso en el orden en que los impartirás, o impórtalos "
+"desde un CSV del sílabo."
 
-#: courses/templates/courses/home.html:86
+#: courses/templates/courses/home.html:85
 msgid "Attach materials"
 msgstr "Adjunta materiales"
 
-#: courses/templates/courses/home.html:87
+#: courses/templates/courses/home.html:86
 msgid "Link PDFs, URLs, images, videos, and documents to each topic."
 msgstr "Vincula PDFs, URLs, imágenes, videos y documentos a cada tema."
 
@@ -537,63 +585,108 @@ msgstr "Volver a los temas"
 msgid "Prev"
 msgstr "Anterior"
 
-#: courses/templates/courses/partials/calendar_grid.html:27
+#: courses/templates/courses/partials/calendar_grid.html:26
+#: courses/templates/courses/today.html:4
+#: courses/templates/courses/today.html:9 templates/base.html:21
+msgid "Today"
+msgstr "Hoy"
+
+#: courses/templates/courses/partials/calendar_grid.html:33
 msgid "Next"
 msgstr "Siguiente"
 
-#: courses/templates/courses/partials/calendar_grid.html:36
-#: courses/templates/courses/partials/calendar_session_detail.html:20
+#: courses/templates/courses/partials/calendar_grid.html:42
+#: courses/templates/courses/partials/calendar_session_detail.html:12
+#: courses/templates/courses/today.html:14
 msgid "Unassigned"
 msgstr "Sin asignar"
+
+#: courses/templates/courses/partials/calendar_grid.html:61
+#: courses/templates/courses/partials/calendar_grid.html:62
+#: courses/templates/courses/partials/calendar_session_detail.html:39
+#: schedule/models.py:43
+msgid "Delayed"
+msgstr "Atrasada"
+
+#: courses/templates/courses/partials/calendar_log_edit_form.html:3
+#, python-format
+msgid "Edit log for %(date)s"
+msgstr "Editar registro del %(date)s"
+
+#: courses/templates/courses/partials/calendar_log_edit_form.html:22
+#: courses/templates/courses/partials/material_form.html:47
+#: courses/templates/courses/partials/schedule_form.html:58
+#: courses/templates/courses/partials/topic_form.html:56
+#: courses/templates/courses/partials/topic_move_form.html:18
+#: courses/templates/courses/syllabus_review.html:94
+#: courses/templates/courses/syllabus_upload.html:58
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: courses/templates/courses/partials/calendar_log_edit_form.html:23
+#: courses/templates/courses/partials/material_form.html:50
+#: courses/templates/courses/partials/schedule_form.html:61
+#: courses/templates/courses/partials/topic_form.html:59
+msgid "Save Changes"
+msgstr "Guardar cambios"
 
 #: courses/templates/courses/partials/calendar_log_form.html:3
 #, python-format
 msgid "Log for %(date)s"
 msgstr "Registro del %(date)s"
 
-#: courses/templates/courses/partials/calendar_log_form.html:39
-#: courses/templates/courses/partials/material_form.html:47
-#: courses/templates/courses/partials/schedule_form.html:58
-#: courses/templates/courses/partials/topic_form.html:47
-#: courses/templates/courses/syllabus_review.html:94
-#: courses/templates/courses/syllabus_upload.html:58
-msgid "Cancel"
-msgstr "Cancelar"
-
-#: courses/templates/courses/partials/calendar_log_form.html:45
+#: courses/templates/courses/partials/calendar_log_form.html:41
 msgid "Save Log"
 msgstr "Guardar registro"
 
 #: courses/templates/courses/partials/calendar_session_detail.html:11
-#: courses/templates/courses/schedule_list.html:29
-msgid "Day"
-msgstr "Día"
+msgid "Real topic"
+msgstr "Tema real"
 
-#: courses/templates/courses/partials/calendar_session_detail.html:23
-msgid "Course"
-msgstr "Curso"
+#: courses/templates/courses/partials/calendar_session_detail.html:15
+msgid "Date"
+msgstr "Fecha"
 
-#: courses/templates/courses/partials/calendar_session_detail.html:34
-msgid "Problem:"
-msgstr "Problema:"
+#: courses/templates/courses/partials/calendar_session_detail.html:16
+#, python-format
+msgid "%(day)s from %(start)s to %(end)s"
+msgstr "%(day)s de %(start)s a %(end)s"
 
-#: courses/templates/courses/partials/calendar_session_detail.html:35
-msgid "Solution:"
-msgstr "Solución:"
+#: courses/templates/courses/partials/calendar_session_detail.html:21
+msgid "Also in this hour"
+msgstr "También en esta hora"
 
-#: courses/templates/courses/partials/calendar_session_detail.html:44
+#: courses/templates/courses/partials/calendar_session_detail.html:38
+msgid "Ideal topic"
+msgstr "Tema ideal"
+
+#: courses/templates/courses/partials/calendar_session_detail.html:54
+msgid "Problem"
+msgstr "Problema"
+
+#: courses/templates/courses/partials/calendar_session_detail.html:55
+msgid "Solution"
+msgstr "Solución"
+
+#: courses/templates/courses/partials/calendar_session_detail.html:63
+msgid "View detail logs"
+msgstr "Ver registros detallados"
+
+#: courses/templates/courses/partials/calendar_session_detail.html:67
+#: courses/templates/courses/today.html:52
 msgid "Add Log"
 msgstr "Agregar registro"
+
+#: courses/templates/courses/partials/lost_topics.html:4
+#, python-format
+msgid "%(n)s topic no longer fits in the calendar because of delays"
+msgid_plural "%(n)s topics no longer fit in the calendar because of delays"
+msgstr[0] "%(n)s tema ya no cabe en el calendario por los atrasos"
+msgstr[1] "%(n)s temas ya no caben en el calendario por los atrasos"
 
 #: courses/templates/courses/partials/material_form.html:3
 msgid "Edit Material"
 msgstr "Editar material"
-
-#: courses/templates/courses/partials/material_form.html:50
-#: courses/templates/courses/partials/schedule_form.html:61
-#: courses/templates/courses/partials/topic_form.html:50
-msgid "Save Changes"
-msgstr "Guardar cambios"
 
 #: courses/templates/courses/partials/material_item.html:31
 msgid "Are you sure you want to delete this material?"
@@ -612,7 +705,9 @@ msgstr "Editar horario"
 msgid ""
 "Select one or more days for this time slot. Each schedule can cover multiple "
 "days with the same start and end times."
-msgstr "Selecciona uno o más días para esta franja horaria. Cada horario puede cubrir varios días con la misma hora de inicio y fin."
+msgstr ""
+"Selecciona uno o más días para esta franja horaria. Cada horario puede "
+"cubrir varios días con la misma hora de inicio y fin."
 
 #: courses/templates/courses/partials/schedule_form.html:61
 msgid "Create Schedule"
@@ -635,9 +730,13 @@ msgstr "Agregar tema"
 msgid "Edit Topic"
 msgstr "Editar tema"
 
-#: courses/templates/courses/partials/topic_form.html:50
+#: courses/templates/courses/partials/topic_form.html:59
 msgid "Create Topic"
 msgstr "Crear tema"
+
+#: courses/templates/courses/partials/topic_item.html:4
+msgid "Fixed"
+msgstr "Fija"
 
 #: courses/templates/courses/partials/topic_item.html:10
 #, python-format
@@ -647,16 +746,34 @@ msgstr[0] "%(n)s material"
 msgstr[1] "%(n)s materiales"
 
 #: courses/templates/courses/partials/topic_item.html:13
+#: courses/templates/courses/today.html:43
 msgid "None"
 msgstr "Ninguno"
 
-#: courses/templates/courses/partials/topic_item.html:28
+#: courses/templates/courses/partials/topic_item.html:22
+#: courses/templates/courses/partials/topic_move_form.html:19
+msgid "Reorder"
+msgstr "Reordenar"
+
+#: courses/templates/courses/partials/topic_item.html:34
 msgid "Are you sure you want to delete this topic?"
 msgstr "¿Seguro que quieres eliminar este tema?"
+
+#: courses/templates/courses/partials/topic_move_form.html:3
+msgid "Reorder Topic"
+msgstr "Reordenar tema"
+
+#: courses/templates/courses/partials/topic_move_form.html:12
+msgid "New position"
+msgstr "Nueva posición"
 
 #: courses/templates/courses/schedule_list.html:15
 msgid "Course Schedule"
 msgstr "Horario del curso"
+
+#: courses/templates/courses/schedule_list.html:29
+msgid "Day"
+msgstr "Día"
 
 #: courses/templates/courses/schedule_list.html:32
 msgid "Duration"
@@ -674,7 +791,9 @@ msgstr "Nota:"
 msgid ""
 "Schedule defines the recurring weekly pattern for this course. You can add "
 "multiple schedules for different days and times."
-msgstr "El horario define el patrón semanal recurrente de este curso. Puedes agregar varios horarios para distintos días y horas."
+msgstr ""
+"El horario define el patrón semanal recurrente de este curso. Puedes agregar "
+"varios horarios para distintos días y horas."
 
 #: courses/templates/courses/syllabus_review.html:5
 msgid "Review Topics"
@@ -731,13 +850,17 @@ msgstr "Plantilla requerida"
 msgid ""
 "The file must be a <code>.csv</code> (max 10MB) with this exact header row, "
 "in order:"
-msgstr "El archivo debe ser un <code>.csv</code> (máx. 10MB) con esta fila de encabezado exacta, en orden:"
+msgstr ""
+"El archivo debe ser un <code>.csv</code> (máx. 10MB) con esta fila de "
+"encabezado exacta, en orden:"
 
 #: courses/templates/courses/syllabus_upload.html:45
 msgid ""
 "<code>code</code> and <code>name</code> are required; <code>description</"
 "code> may be empty; <code>order</code> must be a positive integer."
-msgstr "<code>code</code> y <code>name</code> son obligatorios; <code>description</code> puede estar vacío; <code>order</code> debe ser un entero positivo."
+msgstr ""
+"<code>code</code> y <code>name</code> son obligatorios; <code>description</"
+"code> puede estar vacío; <code>order</code> debe ser un entero positivo."
 
 #: courses/templates/courses/syllabus_upload.html:49
 msgid "Download CSV Template"
@@ -747,191 +870,155 @@ msgstr "Descargar plantilla CSV"
 msgid "Upload & Extract Topics"
 msgstr "Subir y extraer temas"
 
+#: courses/templates/courses/today.html:59
+msgid "No sessions scheduled for today."
+msgstr "No hay sesiones programadas para hoy."
+
 #: courses/templates/courses/topics_list.html:51
 msgid "No topics added yet."
 msgstr "Aún no hay temas."
 
-#: courses/views.py:109
+#: courses/views.py:146
 #, python-format
 msgid "Topic \"%(name)s\" created successfully."
 msgstr "Tema \"%(name)s\" creado correctamente."
 
-#: courses/views.py:159
+#: courses/views.py:193
 #, python-format
 msgid "Topic \"%(name)s\" updated successfully."
 msgstr "Tema \"%(name)s\" actualizado correctamente."
 
-#: courses/views.py:192
+#: courses/views.py:223
 #, python-format
 msgid "Topic \"%(name)s\" deleted successfully."
 msgstr "Tema \"%(name)s\" eliminado correctamente."
 
-#: courses/views.py:246
+#: courses/views.py:254
+#, python-format
+msgid "Topic \"%(name)s\" moved to position %(order)s."
+msgstr ""
+
+#: courses/views.py:311
 #, python-format
 msgid "Material \"%(name)s\" added successfully."
 msgstr "Material \"%(name)s\" agregado correctamente."
 
-#: courses/views.py:300
+#: courses/views.py:361
 #, python-format
 msgid "Material \"%(name)s\" updated successfully."
 msgstr "Material \"%(name)s\" actualizado correctamente."
 
-#: courses/views.py:335
+#: courses/views.py:392
 #, python-format
 msgid "Material \"%(name)s\" deleted successfully."
 msgstr "Material \"%(name)s\" eliminado correctamente."
 
-#: courses/views.py:609
+#: courses/views.py:758
 msgid ""
 "A schedule with this time range already exists. Please edit it to add more "
 "days."
-msgstr "Ya existe un horario con este rango de horas. Edítalo para agregar más días."
+msgstr ""
+"Ya existe un horario con este rango de horas. Edítalo para agregar más días."
 
-#: courses/views.py:623
+#: courses/views.py:766
 #, python-format
 msgid "Schedule created for %(days)s successfully."
 msgstr "Horario creado para %(days)s correctamente."
 
-#: courses/views.py:687
+#: courses/views.py:828
 msgid "Schedule updated successfully."
 msgstr "Horario actualizado correctamente."
 
-#: courses/views.py:719
+#: courses/views.py:856
 msgid "Schedule deleted successfully."
 msgstr "Horario eliminado correctamente."
 
-#: courses/views.py:807 courses/views.py:826
+#: courses/views.py:1015 courses/views.py:1040
 #, python-format
 msgid "%(count)d calendar session generated."
 msgid_plural "%(count)d calendar sessions generated."
 msgstr[0] "Se generó %(count)d sesión del calendario."
 msgstr[1] "Se generaron %(count)d sesiones del calendario."
 
-#: courses/views.py:862
+#: courses/views.py:1079
 msgid "No topics found in the CSV file."
 msgstr "No se encontraron temas en el archivo CSV."
 
-#: courses/views.py:894
+#: courses/views.py:1108
 #, python-format
 msgid "Error processing file: %(error)s"
 msgstr "Error al procesar el archivo: %(error)s"
 
-#: courses/views.py:926
+#: courses/views.py:1139
 msgid "No draft topics found. Please upload a syllabus file."
 msgstr "No se encontraron temas en borrador. Sube un archivo de sílabo."
 
-#: courses/views.py:949
+#: courses/views.py:1162
 msgid "No draft topics found."
 msgstr "No se encontraron temas en borrador."
 
-#: courses/views.py:958
+#: courses/views.py:1171
 msgid "No topics selected for import."
 msgstr "No se seleccionaron temas para importar."
 
-#: courses/views.py:995
+#: courses/views.py:1212
 #, python-format
 msgid "Successfully imported %(count)d topic from syllabus!"
 msgid_plural "Successfully imported %(count)d topics from syllabus!"
 msgstr[0] "¡Se importó %(count)d tema desde el sílabo!"
 msgstr[1] "¡Se importaron %(count)d temas desde el sílabo!"
 
-#: courses/views.py:1003
+#: courses/views.py:1224
 #, python-format
 msgid ""
 "Import cancelled, no topics were saved: a topic with that order already "
 "exists (%(error)s)"
-msgstr "Importación cancelada, no se guardó ningún tema: ya existe un tema con ese orden (%(error)s)"
+msgstr ""
+"Importación cancelada, no se guardó ningún tema: ya existe un tema con ese "
+"orden (%(error)s)"
 
-#: courses/views.py:1015
+#: courses/views.py:1237
 #, python-format
 msgid "Error creating topics: %(error)s"
 msgstr "Error al crear los temas: %(error)s"
 
-#: courses/views.py:1043
+#: courses/views.py:1265
 msgid "Syllabus import cancelled."
 msgstr "Importación del sílabo cancelada."
 
-#: schedule/models.py:36
+#: schedule/models.py:41
 msgid "No log"
 msgstr "Sin registro"
 
-#: schedule/models.py:38
-msgid "Delayed"
-msgstr "Atrasada"
-
-#: schedule/models.py:39
+#: schedule/models.py:44
 msgid "Many logs"
 msgstr "Varios registros"
 
-#: templates/base.html:22
+#: templates/base.html:23
 msgid "Admin"
 msgstr "Administración"
 
-#: templates/base.html:41
+#: templates/base.html:42
 msgid "Dismiss"
 msgstr "Cerrar"
 
-#: templates/base.html:51
+#: templates/base.html:52
 msgid "Course Calendar Application"
 msgstr "Aplicación de calendario de cursos"
 
-#: templates/base.html
-msgid "Today"
-msgstr "Hoy"
+#~ msgid "Course"
+#~ msgstr "Curso"
 
-#: courses/templates/courses/today.html
-msgid "No sessions scheduled for today."
-msgstr "No hay sesiones programadas para hoy."
+#~ msgid "Problem:"
+#~ msgstr "Problema:"
 
-msgid "Current topic"
-msgstr "Tema actual"
+#~ msgid "Solution:"
+#~ msgstr "Solución:"
 
-msgid "Ideal topic"
-msgstr "Tema ideal"
+#~ msgid "Current topic"
+#~ msgstr "Tema actual"
 
-msgid "%(n)s topic behind schedule"
-msgid_plural "%(n)s topics behind schedule"
-msgstr[0] "%(n)s tema de atraso"
-msgstr[1] "%(n)s temas de atraso"
-
-msgid "%(n)s topic no longer fits in the calendar because of delays"
-msgid_plural "%(n)s topics no longer fit in the calendar because of delays"
-msgstr[0] "%(n)s tema ya no cabe en el calendario por los atrasos"
-msgstr[1] "%(n)s temas ya no caben en el calendario por los atrasos"
-
-msgid "Real topic"
-msgstr "Tema real"
-
-msgid "Ahead"
-msgstr "Adelantado"
-
-msgid "On time"
-msgstr "Al día"
-
-msgid "Behind"
-msgstr "Atrasado"
-
-msgid "Also in this hour"
-msgstr "También en esta hora"
-
-msgid "Date"
-msgstr "Fecha"
-
-#, python-format
-msgid "%(day)s from %(start)s to %(end)s"
-msgstr "%(day)s de %(start)s a %(end)s"
-
-msgid "Problem"
-msgstr "Problema"
-
-msgid "Solution"
-msgstr "Solución"
-
-msgid "All topics"
-msgstr "Todos los temas"
-
-msgid "View detail logs"
-msgstr "Ver registros detallados"
-
-msgid "Edit log for %(date)s"
-msgstr "Editar registro del %(date)s"
+#~ msgid "%(n)s topic behind schedule"
+#~ msgid_plural "%(n)s topics behind schedule"
+#~ msgstr[0] "%(n)s tema de atraso"
+#~ msgstr[1] "%(n)s temas de atraso"

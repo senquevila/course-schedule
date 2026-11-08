@@ -645,3 +645,42 @@ class ListQueryCountTestCase(TestCase):
 
     def test_home(self):
         self.assertQueriesDontGrow(reverse("courses:home"), lambda: [self._add_course(n) for n in "BCD"])
+
+
+class FixedTopicTestCase(TestCase):
+    """A topic with a fixed date (exam) keeps its slot; the others flow around it"""
+
+    def setUp(self):
+        from schedule.models import CourseCalendar
+
+        period = Period.objects.create(name="P", start_date=date(2026, 1, 1), end_date=date(2026, 12, 31))
+        assignature = Assignature.objects.create(code="CS101", name="Test", uv=4)
+        self.course = Course.objects.create(assignature=assignature, name="Test", period=period)
+        self.sessions = [
+            CourseCalendar.objects.create(
+                course=self.course,
+                session_date=date(2026, 9, day),
+                day_of_week=0,
+                start_time="08:00",
+                end_time="09:00",
+            )
+            for day in (1, 2, 3, 4)
+        ]
+        for i in (1, 2, 3):
+            Topic.objects.create(course=self.course, code=f"T{i}", name=f"T{i}", order=i)
+        Topic.objects.create(course=self.course, code="EX", name="Exam", order=4, fixed_date=date(2026, 9, 2))
+
+    def topics(self):
+        from courses.views import _reflow_topics
+
+        _reflow_topics(self.course)
+        return [(s.topic.name, s.ideal_topic.name) for s in self.course.sessions.order_by("session_date")]
+
+    def test_exam_keeps_its_date(self):
+        self.assertEqual(self.topics(), [("T1", "T1"), ("Exam", "Exam"), ("T2", "T2"), ("T3", "T3")])
+
+    def test_delay_flows_around_exam(self):
+        self.topics()
+        log = CourseCalendarLog.objects.create(actual_date=date(2026, 9, 3))
+        log.calendar_entries.add(self.sessions[0])
+        self.assertEqual(self.topics(), [("T1", "T1"), ("Exam", "Exam"), ("T1", "T2"), ("T2", "T3")])

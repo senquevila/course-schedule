@@ -583,6 +583,8 @@ def _replay_delays(course, after=None):
         .order_by("session_date", "start_time")
     )
     for session in sessions:
+        if session.topic and session.topic.fixed_date:
+            continue  # fixed topics are moved by editing their date, not by logs
         for log in sorted(session.logs.all(), key=lambda log: log.created_at):
             if log.actual_date and log.actual_date > session.session_date and (not after or log.actual_date > after):
                 CourseCalendar.objects.filter(
@@ -590,7 +592,8 @@ def _replay_delays(course, after=None):
                     session_date=log.actual_date,
                     start_time=session.start_time,
                     logs__isnull=True,
-                ).update(topic=session.topic)
+                ).exclude(topic__fixed_date=F("session_date")).update(topic=session.topic)
+                # ponytail: a makeup landing on a fixed slot is dropped, not pushed to the next slot
                 _rebuild_after(course, log.actual_date)
 
 
@@ -897,10 +900,27 @@ def _generate_calendar_sessions(course, schedule, non_working_days, after=None):
     return len(new_sessions)
 
 
+def _fixed_slots(course):
+    """{session id: topic} for fixed topics: each takes the first free slot of its date.
+    A fixed date with no slot (no class, non-working day) leaves the topic lost."""
+    slots = {}
+    for topic in Topic.objects.filter(course=course, fixed_date__isnull=False).order_by("order"):
+        slot = (
+            CourseCalendar.objects.filter(course=course, session_date=topic.fixed_date)
+            .exclude(EARLY_LOGGED)
+            .exclude(pk__in=slots)
+            .order_by("start_time")
+            .first()
+        )
+        if slot:
+            slots[slot.pk] = topic
+    return slots
+
+
 def _assign_topics(course, after=None, keep_logged=False):
     """Assign topics in order across the course's unlogged sessions (only those
     dated after `after`, if given), one topic per hourly session slot.
-    Topics already held by the sessions left alone are skipped."""
+    Topics already held by the sessions left alone are skipped; fixed topics keep their slot."""
     sessions = CourseCalendar.objects.filter(course=course, logs__isnull=True)
     if after:
         sessions = sessions.filter(session_date__gt=after)
@@ -910,10 +930,13 @@ def _assign_topics(course, after=None, keep_logged=False):
         .exclude(pk__in=[session.pk for session in sessions])
         .values("topic_id")
     )
-    topics = list(Topic.objects.filter(course=course).exclude(pk__in=kept_topic_ids).order_by("order"))
+    fixed = _fixed_slots(course)
+    topics = iter(
+        Topic.objects.filter(course=course, fixed_date__isnull=True).exclude(pk__in=kept_topic_ids).order_by("order")
+    )
     changed = []
-    for i, session in enumerate(sessions):
-        topic = topics[i] if i < len(topics) else None
+    for session in sessions:
+        topic = fixed[session.pk] if session.pk in fixed else next(topics, None)
         if session.topic_id != (topic and topic.id):
             session.topic = topic
             changed.append(session)
@@ -923,10 +946,11 @@ def _assign_topics(course, after=None, keep_logged=False):
 
 def _assign_ideal_topics(course, keep_logged=False):
     """Set every session's ideal_topic: the Nth slot of the course gets the Nth topic
-    by order, ignoring logs. Slots are fixed by schedules and non-working days, so
+    by order, ignoring logs (fixed topics hold their own date). Slots are fixed by schedules and non-working days, so
     delays never change this; only schedule or topic edits do. With `keep_logged`,
     logged sessions keep the ideal topic they had."""
-    topics = list(Topic.objects.filter(course=course).order_by("order"))
+    fixed = _fixed_slots(course)
+    topics = iter(Topic.objects.filter(course=course, fixed_date__isnull=True).order_by("order"))
     sessions = (
         CourseCalendar.objects.filter(course=course)
         .exclude(EARLY_LOGGED)
@@ -934,8 +958,8 @@ def _assign_ideal_topics(course, keep_logged=False):
         .order_by("session_date", "start_time")
     )
     changed = []
-    for i, session in enumerate(sessions):
-        ideal = topics[i] if i < len(topics) else None
+    for session in sessions:
+        ideal = fixed[session.pk] if session.pk in fixed else next(topics, None)
         if keep_logged and session.has_logs:
             continue
         if session.ideal_topic_id != (ideal and ideal.id):

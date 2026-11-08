@@ -43,6 +43,15 @@
         {% endif %}
     </div>
 
+    <div class="form-group">
+        <label for="{{ form.fixed_date.id_for_label }}">{{ form.fixed_date.label }}</label>
+        {{ form.fixed_date }}
+        <small class="text-muted">{{ form.fixed_date.help_text }}</small>
+        {% if form.fixed_date.errors %}
+        <div class="form-error">{{ form.fixed_date.errors.0 }}</div>
+        {% endif %}
+    </div>
+
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">{% translate "Cancel" %}</button>
         <button type="submit" class="btn btn-primary">

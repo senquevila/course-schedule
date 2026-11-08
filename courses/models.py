@@ -64,6 +64,8 @@ class Topic(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     order = models.IntegerField(help_text="Sequence position within course")
+    # Fixed topics (exams) stay on this date's slot; the automatic re-flow never moves them
+    fixed_date = models.DateField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

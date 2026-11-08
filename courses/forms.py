@@ -16,8 +16,15 @@ class TopicForm(forms.ModelForm):
 
     class Meta:
         model = Topic
-        fields = ["code", "name", "description", "order"]
-        labels = {"code": _("Code"), "name": _("Name"), "description": _("Description"), "order": _("Order")}
+        fields = ["code", "name", "description", "order", "fixed_date"]
+        labels = {
+            "code": _("Code"),
+            "name": _("Name"),
+            "description": _("Description"),
+            "order": _("Order"),
+            "fixed_date": _("Fixed date"),
+        }
+        help_texts = {"fixed_date": _("For exams: the topic stays on this date and is only moved by editing it here")}
         widgets = {
             "code": forms.TextInput(attrs={"class": "form-input", "placeholder": _("e.g., T01"), "required": True}),
             "name": forms.TextInput(attrs={"class": "form-input", "placeholder": _("Topic name"), "required": True}),
@@ -27,6 +34,7 @@ class TopicForm(forms.ModelForm):
             "order": forms.NumberInput(
                 attrs={"class": "form-input", "placeholder": _("Order/sequence number"), "required": True}
             ),
+            "fixed_date": forms.DateInput(attrs={"class": "form-input", "type": "date"}, format="%Y-%m-%d"),
         }
 
 
