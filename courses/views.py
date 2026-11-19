@@ -572,29 +572,35 @@ def _save_log(form, session, previous_date=None):
 
 
 def _replay_delays(course, after=None):
-    """Re-apply every logged delay landing after `after` (all, if None), oldest session
-    first: the makeup slot takes the delayed topic and the rest re-flow after it. Without
-    this, any re-flow would drop earlier delays back to the ideal topics."""
+    """Re-apply every logged delay landing after `after` (all, if None), earliest makeup
+    date first: the makeup slot takes the delayed topic and the rest re-flow after it.
+    Without this, any re-flow would drop earlier delays back to the ideal topics.
+    Replaying by makeup date matters: each re-flow wipes every makeup slot after it."""
     sessions = (
         CourseCalendar.objects.filter(course=course, logs__actual_date__gt=F("session_date"))
         .distinct()
         .select_related("topic")
         .prefetch_related("logs")
-        .order_by("session_date", "start_time")
     )
-    for session in sessions:
-        if session.topic and session.topic.fixed_date:
-            continue  # fixed topics are moved by editing their date, not by logs
-        for log in sorted(session.logs.all(), key=lambda log: log.created_at):
-            if log.actual_date and log.actual_date > session.session_date and (not after or log.actual_date > after):
-                CourseCalendar.objects.filter(
-                    course=course,
-                    session_date=log.actual_date,
-                    start_time=session.start_time,
-                    logs__isnull=True,
-                ).exclude(topic__fixed_date=F("session_date")).update(topic=session.topic)
-                # ponytail: a makeup landing on a fixed slot is dropped, not pushed to the next slot
-                _rebuild_after(course, log.actual_date)
+    delays = sorted(
+        (
+            (log.actual_date, session.start_time, session)
+            for session in sessions
+            if not (session.topic and session.topic.fixed_date)  # fixed topics move by editing their date, not by logs
+            for log in session.logs.all()
+            if log.actual_date and log.actual_date > session.session_date and (not after or log.actual_date > after)
+        ),
+        key=lambda delay: delay[:2],
+    )
+    for actual_date, start_time, session in delays:
+        CourseCalendar.objects.filter(
+            course=course,
+            session_date=actual_date,
+            start_time=start_time,
+            logs__isnull=True,
+        ).exclude(topic__fixed_date=F("session_date")).update(topic=session.topic)
+        # ponytail: a makeup landing on a fixed slot is dropped, not pushed to the next slot
+        _rebuild_after(course, actual_date)
 
 
 def _course_log_or_404(course_id, log_id):

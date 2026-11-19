@@ -8,10 +8,11 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
-from schedule.models import CourseCalendarLog
+from schedule.models import CourseCalendar, CourseCalendarLog
 
 from .models import Assignature, Course, Material, Period, SyllabusDraftTopic, Topic
 from .syllabus_parser import SyllabusCSVError, parse_syllabus_csv
+from .views import _reflow_topics
 
 
 class ParseSyllabusCSVTestCase(TestCase):
@@ -651,8 +652,6 @@ class FixedTopicTestCase(TestCase):
     """A topic with a fixed date (exam) keeps its slot; the others flow around it"""
 
     def setUp(self):
-        from schedule.models import CourseCalendar
-
         period = Period.objects.create(name="P", start_date=date(2026, 1, 1), end_date=date(2026, 12, 31))
         assignature = Assignature.objects.create(code="CS101", name="Test", uv=4)
         self.course = Course.objects.create(assignature=assignature, name="Test", period=period)
@@ -671,8 +670,6 @@ class FixedTopicTestCase(TestCase):
         Topic.objects.create(course=self.course, code="EX", name="Exam", order=4, fixed_date=date(2026, 9, 2))
 
     def topics(self):
-        from courses.views import _reflow_topics
-
         _reflow_topics(self.course)
         return [(s.topic.name, s.ideal_topic.name) for s in self.course.sessions.order_by("session_date")]
 
@@ -684,3 +681,26 @@ class FixedTopicTestCase(TestCase):
         log = CourseCalendarLog.objects.create(actual_date=date(2026, 9, 3))
         log.calendar_entries.add(self.sessions[0])
         self.assertEqual(self.topics(), [("T1", "T1"), ("Exam", "Exam"), ("T1", "T2"), ("T2", "T3")])
+
+
+class ReplayDelayOrderTestCase(TestCase):
+    """Delays logged out of date order still all keep their makeup slot"""
+
+    def test_logs_created_out_of_order(self):
+        period = Period.objects.create(name="P", start_date=date(2026, 1, 1), end_date=date(2026, 12, 31))
+        assignature = Assignature.objects.create(code="CS101", name="Test", uv=4)
+        course = Course.objects.create(assignature=assignature, name="Test", period=period)
+        sessions = [
+            CourseCalendar.objects.create(
+                course=course, session_date=date(2026, 9, day), day_of_week=0, start_time="08:00", end_time="09:00"
+            )
+            for day in range(1, 6)
+        ]
+        for i in range(1, 6):
+            Topic.objects.create(course=course, code=f"T{i}", name=f"T{i}", order=i)
+        _reflow_topics(course)
+        for day in (2, 4, 3):  # the 3rd is logged last
+            CourseCalendarLog.objects.create(actual_date=date(2026, 9, day)).calendar_entries.add(sessions[0])
+        _reflow_topics(course)
+        names = [s.topic.name for s in course.sessions.order_by("session_date")]
+        self.assertEqual(names, ["T1", "T1", "T1", "T1", "T2"])
