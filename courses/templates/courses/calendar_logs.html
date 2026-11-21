@@ -70,7 +70,6 @@
                     </button>
                     <button class="action-btn action-delete"
                             hx-delete="{% url 'courses:calendar-log-delete' course.id log.id %}"
-                            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                             hx-target="#log-{{ log.id }}"
                             hx-swap="outerHTML"
                             hx-confirm="{% translate 'Delete this log? The calendar will be re-flowed from this session.' %}">
